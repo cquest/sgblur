@@ -9,14 +9,18 @@ This repository only contains __the blurring algorithms and API__.
 
 Some algorithms (compromise and qualitative) will need system dependencies :
 
-- ffmpeg
-- libsm6
-- libxext6
+- turbojpeg library and headers
 
 You can install them through your package manager, for example in Ubuntu:
 
 ```bash
-sudo apt install git libturbojpeg0-dev libjpeg-turbo-progs python-is-python3 python3-pip
+sudo apt install libturbojpeg0-dev libjpeg-turbo-progs
+```
+
+Basic dependencies may also need:
+
+```bash
+sudo apt install  git python-is-python3 python3-pip
 ```
 
 ### Retrieve code
