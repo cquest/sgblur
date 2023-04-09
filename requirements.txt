@@ -1,0 +1,3 @@
+ultralytics==8.0.58
+pyturbojpeg==1.7.0
+Pillow-simd
