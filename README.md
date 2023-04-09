@@ -2,6 +2,10 @@
 
 This repository only contains __the blurring algorithms and API__.
 
+It is based on YOLOv8 for object detection (faces and license plates) using a custom trained model.
+
+Blurring is done on original JPEG pictures by manipulating low-level MCU in the JPEG raw data, to keep all other parts of the original image unchanged (no decompression/recompression). This also saves CPU usage.
+
 
 ## Install
 
