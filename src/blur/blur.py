@@ -3,6 +3,8 @@ import os, subprocess
 from ultralytics import YOLO
 import turbojpeg
 from PIL import Image, ImageFilter
+import hashlib, pathlib, time
+import exifread
 
 jpeg = turbojpeg.TurboJPEG()
 model = YOLO("./models/yolov8s_panoramax.pt")
@@ -27,8 +29,16 @@ def blurPicture(picture):
     pid = os.getpid()
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/blur%s.jpg' % pid
-    with open(tmp, 'wb') as jpg:
+    with open(tmp, 'w+b') as jpg:
         jpg.write(picture.file.read())
+        jpg.seek(0)
+        tags = exifread.process_file(jpg, details=False)
+    
+    # solve image orientation
+    if 'Image Orientation' in tags:
+        if 'normal' not in str(tags['Image Orientation']):
+            subprocess.run('exiftran -a %s -o %s' % (tmp, tmp+'_tmp'), shell=True)
+            os.replace(tmp+'_tmp', tmp)
 
     # call our detection model and dispatch threads on GPUs
     results = model.predict(source=tmp,
@@ -38,7 +48,7 @@ def blurPicture(picture):
                             device=[pid % 2])
     result = results[0]
     info = []
-
+    
     with open(tmp, 'rb') as jpg:
         width, height, jpeg_subsample, jpeg_colorspace = jpeg.decode_header(jpg.read())
 
