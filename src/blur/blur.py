@@ -61,7 +61,7 @@ def blurPicture(picture):
             # collect info about blurred object to return to client
             info.append({
                 "class": model.names[int(obj.cls)],
-                "confidence": float(obj.conf),
+                "confidence": round(float(obj.conf),2),
                 "xywh": crop_rects[-1]
             })
 
