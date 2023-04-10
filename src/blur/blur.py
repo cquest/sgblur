@@ -33,7 +33,8 @@ def blurPicture(picture):
     # call our detection model and dispatch threads on GPUs
     results = model.predict(source=tmp,
                             classes=[1, 2],
-                            conf=0.1,
+                            imgsz=2048,
+                            conf=0.05,
                             device=[pid % 2])
     result = results[0]
     info = []
