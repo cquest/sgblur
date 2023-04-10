@@ -17,10 +17,11 @@ async def root():
 	response_class=Response
 )
 async def blur_picture(picture: UploadFile):
-	blurredPic = blur.blurPicture(picture)
+	blurredPic, blurInfo = blur.blurPicture(picture)
 
 	# For some reason garbage collection does not run automatically after
 	# a call to an AI model, so it must be done explicitely
 	gc.collect()
 
-	return Response(content=blurredPic, media_type="image/jpeg")
+	headers = { "x-blur": json.dumps(blurInfo)}
+	return Response(content=blurredPic, media_type="image/jpeg", headers=headers)

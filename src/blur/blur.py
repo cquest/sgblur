@@ -36,6 +36,7 @@ def blurPicture(picture):
                             conf=0.1,
                             device=[pid % 2])
     result = results[0]
+    info = []
 
     with open(tmp, 'rb') as jpg:
         width, height, jpeg_subsample, jpeg_colorspace = jpeg.decode_header(jpg.read())
@@ -46,6 +47,7 @@ def blurPicture(picture):
         blocks = 4 # 16x16 pixels
         for obj in result.boxes:
             box = obj.xywh
+
             box_x = int(box[0][0]-(2 << (blocks-1))-box[0][2]/2)
             box_y = int(box[0][1]-(2 << (blocks-1))-box[0][3]/2)
             box_w = int(box[0][2]+(2 << blocks))
@@ -55,7 +57,15 @@ def blurPicture(picture):
                                box_w >> blocks << blocks,
                                box_h >> blocks << blocks])
 
-        # extract cropped jpeg data from boxes
+            # collect info about blurred object to return to client
+            info.append({
+                "class": model.names[int(obj.cls)],
+                "confidence": float(obj.conf),
+                "xywh": crop_rects[-1]
+            })
+
+
+        # extract cropped jpeg data from boxes to be blurred
         with open(tmp, 'rb') as jpg:
             crops = jpeg.crop_multiple(jpg.read(), crop_rects, background_luminance=0)
 
@@ -78,4 +88,4 @@ def blurPicture(picture):
     with open(tmp, 'rb') as jpg:
         original = jpg.read()
     os.remove(tmp)
-    return original
+    return original, info
