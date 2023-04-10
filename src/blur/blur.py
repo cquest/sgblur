@@ -89,8 +89,7 @@ def blurPicture(picture):
             crop.close()
             # pillow based blurring
             img = Image.open(tmpcrop)
-            radius = min(int(max(img.width, img.height)/16) >> 3 << 3, 8)
-            print("radius=",radius)
+            radius = max(int(max(img.width, img.height)/16) >> 3 << 3, 8)
             boxblur = img.filter(ImageFilter.BoxBlur(radius))
             boxblur.save(tmpcrop, subsampling=jpeg_subsample)
             if jpeg_subsample == 4:
