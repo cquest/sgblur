@@ -12,6 +12,8 @@ model.names[0] = 'sign'
 model.names[1] = 'plate'
 model.names[2] = 'face'
 
+crop_save_dir = '/tmp/crops'
+
 def blurPicture(picture):
     """Blurs a single picture using a given mask and returns blurred version.
 
@@ -100,7 +102,31 @@ def blurPicture(picture):
             subprocess.run('/bin/jpegtran -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
             os.replace(tmp+'_tmp', tmp)
         os.remove(tmpcrop)
-    
+
+        # save blur data in JPEG comment at end of file
+        with open(tmp, 'r+b') as jpg:
+            jpg.seek(0, os.SEEK_END)
+            jpg.seek(-2, os.SEEK_CUR)
+            jpg.write(b'\xFF\xFE')
+            jpg.write(len(str(info)+'  ').to_bytes(2, 'big'))
+            jpg.write(str(info).encode())
+            jpg.write(b'\xFF\xD9')
+
+        # keep potential false positive original parts hashed
+        if crop_save_dir != '':
+            for c in range(len(crops)):
+                if info[c]['confidence'] < 0.5:
+                    h = hashlib.sha256()
+                    h.update((str(info)+str(info[c])).encode())
+                    cropname = h.hexdigest()+'.jpg'
+                    dirname = crop_save_dir+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
+                    pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
+                    with open(dirname+cropname, 'wb') as crop:
+                        crop.write(crops[c])
+                    # round ctime/mtime to midnight
+                    daytime = int(time.time()) - int(time.time()) % 86400
+                    os.utime(dirname+cropname, (daytime, daytime))
+
     # return result (original image is no blur needed)
     with open(tmp, 'rb') as jpg:
         original = jpg.read()
