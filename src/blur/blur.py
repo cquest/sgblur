@@ -78,7 +78,9 @@ def blurPicture(picture):
             crop.close()
             # pillow based blurring
             img = Image.open(tmpcrop)
-            boxblur = img.filter(ImageFilter.BoxBlur(32))
+            radius = min(int(max(img.width, img.height)/16) >> 3 << 3, 8)
+            print("radius=",radius)
+            boxblur = img.filter(ImageFilter.BoxBlur(radius))
             boxblur.save(tmpcrop, subsampling=jpeg_subsample)
             # jpegtran "drop"
             subprocess.run('/bin/jpegtran -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
