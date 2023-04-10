@@ -45,7 +45,7 @@ python -m venv env
 source ./env/bin/activate
 ```
 
-Intall python depedencies for the API:
+Install python depedencies for the API:
 
 ```bash
 pip install -r requirements-api.txt
@@ -77,8 +77,11 @@ curl -X 'POST' \
 
 Exemple using httpie :
 
+```bash
 http --form POST http://127.0.0.1:8000/blur/ picture@original.jpg --download --oupput blurred.jpg
+```
 
+A demo API is running on https://api.cquest.org/blur/
 
 
 ## Contributing
