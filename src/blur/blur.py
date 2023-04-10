@@ -92,6 +92,10 @@ def blurPicture(picture):
             print("radius=",radius)
             boxblur = img.filter(ImageFilter.BoxBlur(radius))
             boxblur.save(tmpcrop, subsampling=jpeg_subsample)
+            if jpeg_subsample == 4:
+                # resample crop in case of subsampling mismatch (4:4:0)
+                subprocess.run('/bin/djpeg %s | /bin/cjpeg -sample 1x2 > %s' % (tmpcrop, tmpcrop+'_tmp'), shell=True)
+                os.replace(tmpcrop+'_tmp', tmpcrop)
             # jpegtran "drop"
             subprocess.run('/bin/jpegtran -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
             os.replace(tmp+'_tmp', tmp)
