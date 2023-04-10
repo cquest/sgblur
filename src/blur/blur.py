@@ -15,7 +15,7 @@ model.names[2] = 'face'
 crop_save_dir = '/tmp/crops'
 
 def blurPicture(picture):
-    """Blurs a single picture using a given mask and returns blurred version.
+    """Blurs a single picture by detecting faces and licence plates.
 
     Parameters
     ----------
