@@ -57,18 +57,22 @@ def blurPicture(picture):
 
         # prepare bounding boxes list
         crop_rects = []
-        blocks = 4 # 16x16 pixels
+
+        # MCU maximum size (2^n) = 8 ou 16 pixels
+        hblock, vblock = [(3, 3), (4, 3), (4, 4), (4, 4), (3, 4)][jpeg_subsample]
+
         for obj in result.boxes:
             box = obj.xywh
 
-            box_x = int(box[0][0]-(2 << (blocks-1))-box[0][2]/2)
-            box_y = int(box[0][1]-(2 << (blocks-1))-box[0][3]/2)
-            box_w = int(box[0][2]+(2 << blocks))
-            box_h = int(box[0][3]+(2 << blocks))
-            crop_rects.append([max(0, box_x >> blocks << blocks),
-                               max(0, box_y >> blocks << blocks),
-                               box_w >> blocks << blocks,
-                               box_h >> blocks << blocks])
+            box_x = int(box[0][0]-(2 << (hblock-1))-box[0][2]/2)
+            box_y = int(box[0][1]-(2 << (vblock-1))-box[0][3]/2)
+            box_w = int(box[0][2]+(2 << (hblock)))
+            box_h = int(box[0][3]+(2 << (vblock)))
+            crop_rects.append([max(0, box_x >> hblock << hblock),
+                               max(0, box_y >> vblock << vblock),
+                               min(box_w >> hblock << hblock,
+                                   width-max(0, box_x >> hblock << hblock)),
+                               min(box_h >> vblock << vblock, height-max(0, box_y >> vblock << vblock))])
 
             # collect info about blurred object to return to client
             info.append({
@@ -76,7 +80,6 @@ def blurPicture(picture):
                 "confidence": round(float(obj.conf),3),
                 "xywh": crop_rects[-1]
             })
-
 
         # extract cropped jpeg data from boxes to be blurred
         with open(tmp, 'rb') as jpg:
