@@ -48,12 +48,13 @@ def blurPicture(picture):
                             conf=0.05,
                             device=[pid % 2])
     result = results[0]
-    info = []
-    
-    with open(tmp, 'rb') as jpg:
-        width, height, jpeg_subsample, jpeg_colorspace = jpeg.decode_header(jpg.read())
 
+    info = []
     if len(result.boxes) > 0:
+        with open(tmp, 'rb') as jpg:
+            width, height, jpeg_subsample, jpeg_colorspace = jpeg.decode_header(
+                jpg.read())
+
         # prepare bounding boxes list
         crop_rects = []
         blocks = 4 # 16x16 pixels
