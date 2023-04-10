@@ -61,14 +61,14 @@ def blurPicture(picture):
             # collect info about blurred object to return to client
             info.append({
                 "class": model.names[int(obj.cls)],
-                "confidence": round(float(obj.conf),2),
+                "confidence": round(float(obj.conf),3),
                 "xywh": crop_rects[-1]
             })
 
 
         # extract cropped jpeg data from boxes to be blurred
         with open(tmp, 'rb') as jpg:
-            crops = jpeg.crop_multiple(jpg.read(), crop_rects, background_luminance=0)
+            crops = jpeg.crop_multiple(jpg.read(), crop_rects, background_luminance=0, copynone=True)
 
         # blur boxes and paste them onto original
         tmpcrop = '/dev/shm/crop%s.jpg' % os.getpid()
