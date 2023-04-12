@@ -11,21 +11,25 @@ Blurring is done on original JPEG pictures by manipulating low-level MCU in the 
 
 ### System dependencies
 
-Some algorithms (compromise and qualitative) will need system dependencies :
+These dependencies are needed for lossless JPEG tanasformations :
 
 - turbojpeg library and headers
+- exiftran
 
 You can install them through your package manager, for example in Ubuntu:
 
 ```bash
-sudo apt install libturbojpeg0-dev libjpeg-turbo-progs
+sudo apt install libturbojpeg0-dev libjpeg-turbo-progs exiftran
 ```
 
 Basic dependencies may also need:
 
 ```bash
-sudo apt install  git python-is-python3 python3-pip
+sudo apt install git python-is-python3 python3-pip
 ```
+
+Running on a GPU will requires NVidia drivers and Cuda.
+
 
 ### Retrieve code
 
@@ -81,7 +85,7 @@ Exemple using httpie :
 http --form POST http://127.0.0.1:8000/blur/ picture@original.jpg --download --oupput blurred.jpg
 ```
 
-A demo API is running on https://api.cquest.org/blur/
+A **demo API** is running on https://api.cquest.org/blur/
 
 
 ## Contributing
