@@ -26,3 +26,11 @@ async def blur_picture(picture: UploadFile):
 
 	headers = { "x-blur": json.dumps(blurInfo)}
 	return Response(content=blurredPic, media_type="image/jpeg", headers=headers)
+
+@app.get(
+	"/blur/",
+	responses={200: {"content": {"text/html": {}}}},
+	response_class=Response
+)
+async def blur_form():
+	return Response(content=open('demo.html', 'rb').read(), media_type="text/html")
