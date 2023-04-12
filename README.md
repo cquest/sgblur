@@ -82,7 +82,7 @@ curl -X 'POST' \
 Exemple using httpie :
 
 ```bash
-http --form POST http://127.0.0.1:8000/blur/ picture@original.jpg --download --oupput blurred.jpg
+http --form POST http://127.0.0.1:8000/blur/ picture@original.jpg --download --output blurred.jpg
 ```
 
 A **demo API** is running on https://api.cquest.org/blur/
