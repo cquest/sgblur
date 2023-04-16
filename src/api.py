@@ -24,8 +24,12 @@ async def blur_picture(picture: UploadFile):
 	# a call to an AI model, so it must be done explicitely
 	gc.collect()
 
+	if not blurredPic:
+		raise HTTPException(status_code=400, detail="Invalid picture to process")
+
 	headers = { "x-blur": json.dumps(blurInfo)}
 	return Response(content=blurredPic, media_type="image/jpeg", headers=headers)
+
 
 @app.get(
 	"/blur/",
