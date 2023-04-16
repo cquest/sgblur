@@ -2,7 +2,7 @@ import os, subprocess
 
 from ultralytics import YOLO
 import turbojpeg
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageOps
 import hashlib, pathlib, time
 import exifread
 
@@ -98,8 +98,12 @@ def blurPicture(picture):
             # pillow based blurring
             img = Image.open(tmpcrop)
             radius = max(int(max(img.width, img.height)/16) >> 3 << 3, 8)
-            boxblur = img.filter(ImageFilter.BoxBlur(radius))
-            boxblur.save(tmpcrop, subsampling=jpeg_subsample)
+            # pixelate first
+            reduced = ImageOps.scale(img, 1/radius, resample=0)
+            pixelated = ImageOps.scale(reduced, radius, resample=0)
+            # and blur
+            boxblur = pixelated.filter(ImageFilter.BoxBlur(radius))
+            boxblur.save(tmpcrop, subsampling=jpeg_subsample, quality=20)
             if jpeg_subsample == 4:
                 # resample crop in case of subsampling mismatch (4:4:0)
                 subprocess.run('/bin/djpeg %s | /bin/cjpeg -sample 1x2 > %s' % (tmpcrop, tmpcrop+'_tmp'), shell=True)
