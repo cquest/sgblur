@@ -144,8 +144,10 @@ def blurPicture(picture):
     with open(tmp, 'rb') as jpg:
         original = jpg.read()
     
-    if True:
+    try:
         os.remove(tmp)
         os.remove(tmpcrop)
+    except:
+        pass
 
     return original, info
