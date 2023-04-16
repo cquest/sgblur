@@ -38,3 +38,21 @@ async def blur_picture(picture: UploadFile):
 )
 async def blur_form():
 	return Response(content=open('demo.html', 'rb').read(), media_type="text/html")
+
+
+@app.post(
+	"/deblur/",
+	responses={200: {"content": {"image/jpeg": {}}}},
+	response_class=Response
+)
+async def blur_picture(picture: UploadFile, idx: int):
+	deblurredPic = blur.deblurPicture(picture, idx)
+
+	# For some reason garbage collection does not run automatically after
+	# a call to an AI model, so it must be done explicitely
+	gc.collect()
+
+	if not deblurredPic:
+		raise HTTPException(status_code=400, detail="Invalid picture to process")
+
+	return Response(content=deblurredPic, media_type="image/jpeg")

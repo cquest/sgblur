@@ -5,6 +5,8 @@ import turbojpeg
 from PIL import Image, ImageFilter, ImageOps
 import hashlib, pathlib, time
 import exifread
+import json
+
 
 jpeg = turbojpeg.TurboJPEG()
 model = YOLO("./models/yolov8s_panoramax.pt")
@@ -151,3 +153,60 @@ def blurPicture(picture):
         pass
 
     return original, info
+
+
+def deblurPicture(picture, idx):
+    """Un-blur a part of a previously blurred picture by restoring the original saved part.
+
+    Parameters
+    ----------
+    picture : tempfile
+		Picture file
+    idx : int
+        Index in list of blurred parts (starts at 0)
+
+    Returns
+    -------
+    Bytes
+        the "deblurred" image if OK else None
+    """
+
+    try:
+        pid = os.getpid()
+        # copy received JPEG picture to temporary file
+        tmp = '/dev/shm/deblur%s.jpg' % pid
+
+        with open(tmp, 'w+b') as jpg:
+            jpg.write(picture.file.read())
+            jpg.seek(0)
+            tags = exifread.process_file(jpg, details=False)
+
+        # get JPEG comment to retrieve detected objects
+        com = subprocess.run('rdjpgcom %s' % tmp, shell=True, capture_output=True)
+        i = json.loads(com.stdout.decode().replace('\'','"'))
+
+        # do not allow deblur with high confidence detected objects
+        if i[idx]['conf']>0.5:
+            return None
+
+        # compute hashed filename containing original picture part
+        h = hashlib.sha256()
+        h.update((str(i)+str(i[idx])).encode())
+        cropname = h.hexdigest()+'.jpg'
+        cropdir = crop_save_dir+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
+
+        # "drop" original picture part into provided picture
+        crop_rect = i[idx]['xywh']
+        subprocess.run('jpegtran -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rect[0], crop_rect[1], cropdir+cropname, tmp, tmp+'_tmp'), shell=True, capture_output=True)
+        os.replace(tmp+'_tmp', tmp)
+
+        with open(tmp, 'rb') as jpg:
+            deblurred = jpg.read()
+        
+        os.remove(tmp)
+
+        print('deblur: ',i[idx], cropname)
+        return deblurred
+    except:
+        return None
+
