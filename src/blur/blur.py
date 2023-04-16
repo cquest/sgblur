@@ -107,10 +107,10 @@ def blurPicture(picture):
             boxblur.save(tmpcrop, subsampling=jpeg_subsample, quality=20)
             if jpeg_subsample == 4:
                 # resample crop in case of subsampling mismatch (4:4:0)
-                subprocess.run('/bin/djpeg %s | /bin/cjpeg -sample 1x2 > %s' % (tmpcrop, tmpcrop+'_tmp'), shell=True)
+                subprocess.run('djpeg %s | cjpeg -sample 1x2 -quality 20 -outfile %s' % (tmpcrop, tmpcrop+'_tmp'), shell=True)
                 os.replace(tmpcrop+'_tmp', tmpcrop)
             # jpegtran "drop"
-            subprocess.run('/bin/jpegtran -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
+            subprocess.run('jpegtran -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
             os.replace(tmp+'_tmp', tmp)
 
         # save blur data in JPEG comment at end of file
