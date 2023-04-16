@@ -27,15 +27,17 @@ def blurPicture(picture):
     Bytes
         the blurred image
     """
-  
+
     pid = os.getpid()
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/blur%s.jpg' % pid
+    tmpcrop = '/dev/shm/crop%s.jpg' % pid
+
     with open(tmp, 'w+b') as jpg:
         jpg.write(picture.file.read())
         jpg.seek(0)
         tags = exifread.process_file(jpg, details=False)
-    
+
     # solve image orientation
     if 'Image Orientation' in tags:
         if 'normal' not in str(tags['Image Orientation']):
@@ -90,7 +92,6 @@ def blurPicture(picture):
             crops = jpeg.crop_multiple(jpg.read(), crop_rects, background_luminance=0, copynone=True)
 
         # blur boxes and paste them onto original
-        tmpcrop = '/dev/shm/crop%s.jpg' % os.getpid()
         for c in range(len(crops)):
             crop = open(tmpcrop,'wb')
             crop.write(crops[c])
@@ -111,7 +112,6 @@ def blurPicture(picture):
             # jpegtran "drop"
             subprocess.run('/bin/jpegtran -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
             os.replace(tmp+'_tmp', tmp)
-        os.remove(tmpcrop)
 
         # save blur data in JPEG comment at end of file
         with open(tmp, 'r+b') as jpg:
@@ -137,8 +137,15 @@ def blurPicture(picture):
                     daytime = int(time.time()) - int(time.time()) % 86400
                     os.utime(dirname+cropname, (daytime, daytime))
 
+    # regenerate EXIF thumbnail
+    subprocess.run('exiftran -g -i %s' % tmp, shell=True)
+
     # return result (original image is no blur needed)
     with open(tmp, 'rb') as jpg:
         original = jpg.read()
-    os.remove(tmp)
+    
+    if True:
+        os.remove(tmp)
+        os.remove(tmpcrop)
+
     return original, info
