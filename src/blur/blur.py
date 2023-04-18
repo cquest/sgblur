@@ -5,7 +5,7 @@ import turbojpeg
 from PIL import Image, ImageFilter, ImageOps
 import hashlib, pathlib, time
 import exifread
-import json
+import json, uuid
 
 
 jpeg = turbojpeg.TurboJPEG()
@@ -16,13 +16,15 @@ model.names[2] = 'face'
 
 crop_save_dir = '/tmp/crops'
 
-def blurPicture(picture):
+def blurPicture(picture, keep):
     """Blurs a single picture by detecting faces and licence plates.
 
     Parameters
     ----------
     picture : tempfile
 		Picture file
+    keep : int
+        1 to keep blurred part to allow deblur
 
     Returns
     -------
@@ -58,6 +60,8 @@ def blurPicture(picture):
     result = results[0]
 
     info = []
+    salt = None
+
     if len(result.boxes) > 0:
         with open(tmp, 'rb') as jpg:
             width, height, jpeg_subsample, jpeg_colorspace = jpeg.decode_header(
@@ -125,11 +129,12 @@ def blurPicture(picture):
             jpg.write(b'\xFF\xD9')
 
         # keep potential false positive original parts hashed
-        if crop_save_dir != '':
+        if keep == '1' and crop_save_dir != '':
+            salt = str(uuid.uuid4())
             for c in range(len(crops)):
                 if info[c]['confidence'] < 0.5:
                     h = hashlib.sha256()
-                    h.update((str(info)+str(info[c])).encode())
+                    h.update((salt+str(info[c])).encode())
                     cropname = h.hexdigest()+'.jpg'
                     dirname = crop_save_dir+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
                     pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
@@ -155,7 +160,7 @@ def blurPicture(picture):
     return original, info
 
 
-def deblurPicture(picture, idx):
+def deblurPicture(picture, idx, salt):
     """Un-blur a part of a previously blurred picture by restoring the original saved part.
 
     Parameters
@@ -164,6 +169,8 @@ def deblurPicture(picture, idx):
 		Picture file
     idx : int
         Index in list of blurred parts (starts at 0)
+    salt: str
+        salt to compute hashed filename
 
     Returns
     -------
@@ -191,7 +198,7 @@ def deblurPicture(picture, idx):
 
         # compute hashed filename containing original picture part
         h = hashlib.sha256()
-        h.update((str(i)+str(i[idx])).encode())
+        h.update((salt+str(i[idx])).encode())
         cropname = h.hexdigest()+'.jpg'
         cropdir = crop_save_dir+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
 
