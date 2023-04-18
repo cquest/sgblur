@@ -143,11 +143,12 @@ def blurPicture(picture, keep):
                     # round ctime/mtime to midnight
                     daytime = int(time.time()) - int(time.time()) % 86400
                     os.utime(dirname+cropname, (daytime, daytime))
+            info = { 'info': info, 'salt': salt }
 
     # regenerate EXIF thumbnail
     subprocess.run('exiftran -g -i %s' % tmp, shell=True)
 
-    # return result (original image is no blur needed)
+    # return result (original image if no blur needed)
     with open(tmp, 'rb') as jpg:
         original = jpg.read()
     
