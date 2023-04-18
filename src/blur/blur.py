@@ -104,7 +104,7 @@ def blurPicture(picture, keep):
             crop.close()
             # pillow based blurring
             img = Image.open(tmpcrop)
-            radius = max(int(max(img.width, img.height)/16) >> 3 << 3, 8)
+            radius = max(int(max(img.width, img.height)/12) >> 3 << 3, 8)
             # pixelate first
             reduced = ImageOps.scale(img, 1/radius, resample=0)
             pixelated = ImageOps.scale(reduced, radius, resample=0)
