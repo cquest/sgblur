@@ -40,6 +40,15 @@ async def blur_form():
 	return Response(content=open('demo.html', 'rb').read(), media_type="text/html")
 
 
+@app.head(
+	"/blur/",
+	responses={200: {"content": {"text/html": {}}}},
+	response_class=Response
+)
+async def blur_form():
+	return
+
+
 @app.post(
 	"/deblur/",
 	responses={200: {"content": {"image/jpeg": {}}}},
