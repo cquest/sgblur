@@ -51,7 +51,6 @@ def blurPicture(picture, keep):
     # call our detection model and dispatch threads on GPUs
     try:
         results = model.predict(source=tmp,
-                                classes=[1, 2],
                                 conf=0.05,
                                 device=[pid % 2])
     except:
@@ -97,8 +96,10 @@ def blurPicture(picture, keep):
         with open(tmp, 'rb') as jpg:
             crops = jpeg.crop_multiple(jpg.read(), crop_rects, background_luminance=0, copynone=True)
 
-        # blur boxes and paste them onto original
+        # if face or plate, blur boxes and paste them onto original
         for c in range(len(crops)):
+            if info[c]['class'] == 'sign':
+                continue
             crop = open(tmpcrop,'wb')
             crop.write(crops[c])
             crop.close()
@@ -119,7 +120,7 @@ def blurPicture(picture, keep):
             subprocess.run('jpegtran -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
             os.replace(tmp+'_tmp', tmp)
 
-        # save blur data in JPEG comment at end of file
+        # save detected objects data in JPEG comment at end of file
         with open(tmp, 'r+b') as jpg:
             jpg.seek(0, os.SEEK_END)
             jpg.seek(-2, os.SEEK_CUR)
@@ -128,11 +129,12 @@ def blurPicture(picture, keep):
             jpg.write(str(info).encode())
             jpg.write(b'\xFF\xD9')
 
-        # keep potential false positive original parts hashed
-        if keep == '1' and crop_save_dir != '':
+        # keep potential false positive and road signs original parts hashed
+        if crop_save_dir != '':
             salt = str(uuid.uuid4())
             for c in range(len(crops)):
-                if info[c]['confidence'] < 0.5:
+                if ((keep == '1' and info[c]['confidence'] < 0.5 and info[c]['class'] in ['face', 'plate'])
+                        or (info[c]['confidence'] > 0.5 and info[c]['class'] == 'sign')):
                     h = hashlib.sha256()
                     h.update((salt+str(info[c])).encode())
                     cropname = h.hexdigest()+'.jpg'
