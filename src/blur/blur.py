@@ -188,8 +188,6 @@ def deblurPicture(picture, idx, salt):
 
         with open(tmp, 'w+b') as jpg:
             jpg.write(picture.file.read())
-            jpg.seek(0)
-            tags = exifread.process_file(jpg, details=False)
 
         # get JPEG comment to retrieve detected objects
         com = subprocess.run('rdjpgcom %s' % tmp, shell=True, capture_output=True)
