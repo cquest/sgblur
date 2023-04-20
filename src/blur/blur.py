@@ -138,7 +138,7 @@ def blurPicture(picture, keep):
                     h = hashlib.sha256()
                     h.update(((salt if not info[c]['class'] == 'sign' else str(info))+str(info[c])).encode())
                     cropname = h.hexdigest()+'.jpg'
-                    dirname = crop_save_dir+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
+                    dirname = crop_save_dir+'/'+info[c]['class']+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
                     pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
                     with open(dirname+cropname, 'wb') as crop:
                         crop.write(crops[c])
