@@ -136,7 +136,7 @@ def blurPicture(picture, keep):
                 if ((keep == '1' and info[c]['confidence'] < 0.5 and info[c]['class'] in ['face', 'plate'])
                         or (info[c]['confidence'] > 0.5 and info[c]['class'] == 'sign')):
                     h = hashlib.sha256()
-                    h.update((salt+str(info[c])).encode())
+                    h.update(((salt if not info[c]['class'] == 'sign' else str(info))+str(info[c])).encode())
                     cropname = h.hexdigest()+'.jpg'
                     dirname = crop_save_dir+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
                     pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
