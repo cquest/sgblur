@@ -201,7 +201,7 @@ def deblurPicture(picture, idx, salt):
         h = hashlib.sha256()
         h.update((salt+str(i[idx])).encode())
         cropname = h.hexdigest()+'.jpg'
-        cropdir = crop_save_dir+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
+        cropdir = crop_save_dir+'/'+i[idx]['class']+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
 
         # "drop" original picture part into provided picture
         crop_rect = i[idx]['xywh']
