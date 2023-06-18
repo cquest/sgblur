@@ -1,0 +1,8 @@
+#! /bin/bash
+
+API=https://blur.panoramax.openstreetmap.fr/blur/
+
+cd "$1"
+mkdir -p blur
+rm -f blur/*
+ls -1 *.jpg *.JPG | /usr/bin/time -v parallel --progress --bar curl -s -X 'POST' $API -F "picture=@{}" --output "blur/{}"
