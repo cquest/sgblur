@@ -159,7 +159,7 @@ def blurPicture(picture, keep):
             salt = str(uuid.uuid4())
             for c in range(len(crops)):
                 if ((keep == '1' and info[c]['confidence'] < 0.5 and info[c]['class'] in ['face', 'plate'])
-                        or (info[c]['confidence'] > 0.5 and info[c]['class'] == 'sign')):
+                        or (info[c]['confidence'] > 0.2 and info[c]['class'] == 'sign')):
                     h = hashlib.sha256()
                     h.update(((salt if not info[c]['class'] == 'sign' else str(info))+str(info[c])).encode())
                     cropname = h.hexdigest()+'.jpg'
