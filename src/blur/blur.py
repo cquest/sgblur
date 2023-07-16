@@ -6,6 +6,7 @@ from PIL import Image, ImageFilter, ImageOps
 import hashlib, pathlib, time
 import exifread
 import json, uuid
+import torch
 
 
 jpeg = turbojpeg.TurboJPEG()
@@ -33,6 +34,7 @@ def blurPicture(picture, keep):
     """
 
     pid = os.getpid()
+    gpu = pid % torch.cuda.device_count()
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/blur%s.jpg' % pid
     tmpcrop = '/dev/shm/crop%s.jpg' % pid
