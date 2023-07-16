@@ -91,9 +91,8 @@ def blurPicture(picture, keep):
 
         for obj in result.boxes:
             box = obj.xywh
-
-            box_x = int(box[0][0]-(2 << (hblock-1))-box[0][2]/2)
-            box_y = int(box[0][1]-(2 << (vblock-1))-box[0][3]/2)
+            box_x = int(offset[r][0] + box[0][0] - box[0][2]/2)
+            box_y = int(offset[r][0] + box[0][1] - box[0][3]/2)
             box_w = int(box[0][2]+(2 << (hblock)))
             box_h = int(box[0][3]+(2 << (vblock)))
             crop_rects.append([max(0, box_x >> hblock << hblock),
