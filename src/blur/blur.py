@@ -50,15 +50,30 @@ def blurPicture(picture, keep):
             subprocess.run('exiftran -a %s -o %s' % (tmp, tmp+'_tmp'), shell=True)
             os.replace(tmp+'_tmp', tmp)
 
-    # call our detection model and dispatch threads on GPUs
-    try:
-        results = model.predict(source=tmp,
-                                conf=0.05,
-                                device=[pid % 2])
-    except:
-        return None,None
+    # get picture details
+    with open(tmp, 'rb') as jpg:
+        width, height, jpeg_subsample, jpeg_colorspace = jpeg.decode_header(
+            jpg.read())
+        jpg.seek(0)
 
-    result = results[0]
+        if width>=3840:
+            # call our detection model and dispatch threads on GPUs
+            results = model.predict(source=tmp,
+                                    conf=0.05,
+                                    imgsz=min(int(width) >> 5 << 5,8192),
+                                    device=[gpu])
+            result = [results[0]]
+            offset = [[0,0]]
+        else:
+            # call our detection model and dispatch threads on GPUs
+            try:
+                results = model.predict(source=tmp,
+                                        conf=0.05,
+                                        device=[gpu])
+            except:
+                return None,None
+            result = [results[0]]
+            offset = [[0,0]]
 
     info = []
     salt = None
