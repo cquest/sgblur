@@ -1,5 +1,8 @@
-ultralytics==8.0.118
-pyturbojpeg==1.7.1
+ultralytics==8.0.135
+pyturbojpeg==1.7.2
 Pillow-simd
 uuid
-
+exifread
+python-multipart
+fastapi
+uvicorn
