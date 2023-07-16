@@ -43,11 +43,13 @@ def blurPicture(picture, keep):
         jpg.write(picture.file.read())
         jpg.seek(0)
         tags = exifread.process_file(jpg, details=False)
+    print("original", os.path.getsize(tmp))
 
     # solve image orientation
     if 'Image Orientation' in tags:
         if 'normal' not in str(tags['Image Orientation']):
             subprocess.run('exiftran -a %s -o %s' % (tmp, tmp+'_tmp'), shell=True)
+            print("after exiftran", os.path.getsize(tmp+'_tmp'))
             os.replace(tmp+'_tmp', tmp)
 
     # get picture details
