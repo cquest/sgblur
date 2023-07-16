@@ -86,6 +86,7 @@ def blurPicture(picture, keep):
     # get MCU maximum size (2^n) = 8 or 16 pixels subsamplings
     hblock, vblock, sample = [(3, 3 ,'1x1'), (4, 3, '2x1'), (4, 4, '2x2'), (4, 4, '2x2'), (3, 4, '1x2')][jpeg_subsample]
 
+    blurred = False
     for r in range(len(result)):
         for b in range(len(result[r].boxes)):
             obj = result[r].boxes[b]
@@ -116,6 +117,7 @@ def blurPicture(picture, keep):
         for c in range(len(crops)):
             if info[c]['class'] == 'sign':
                 continue
+            blurred = True
             crop = open(tmpcrop,'wb')
             crop.write(crops[c])
             crop.close()
@@ -170,8 +172,12 @@ def blurPicture(picture, keep):
                     os.utime(dirname+cropname, (daytime, daytime))
             info = { 'info': info, 'salt': salt }
 
-    # regenerate EXIF thumbnail
-    subprocess.run('exiftran -g -i %s' % tmp, shell=True)
+        if blurred:
+            # regenerate EXIF thumbnail
+            before_thumb = os.path.getsize(tmp)
+            subprocess.run('exiftran -g -o %s %s' % (tmp+'_tmp', tmp), shell=True)
+            os.replace(tmp+'_tmp', tmp)
+            print("after thumbnail", os.path.getsize(tmp), (100*(os.path.getsize(tmp)-before_thumb)/before_thumb))
 
     # return result (original image if no blur needed)
     with open(tmp, 'rb') as jpg:
