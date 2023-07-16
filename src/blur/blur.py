@@ -86,8 +86,8 @@ def blurPicture(picture, keep):
         # prepare bounding boxes list
         crop_rects = []
 
-        # MCU maximum size (2^n) = 8 ou 16 pixels
-        hblock, vblock = [(3, 3), (4, 3), (4, 4), (4, 4), (3, 4)][jpeg_subsample]
+    # get MCU maximum size (2^n) = 8 or 16 pixels subsamplings
+    hblock, vblock, sample = [(3, 3 ,'1x1'), (4, 3, '2x1'), (4, 4, '2x2'), (4, 4, '2x2'), (3, 4, '1x2')][jpeg_subsample]
 
         for obj in result.boxes:
             box = obj.xywh
