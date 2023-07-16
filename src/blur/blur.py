@@ -84,17 +84,19 @@ def blurPicture(picture, keep):
     # get MCU maximum size (2^n) = 8 or 16 pixels subsamplings
     hblock, vblock, sample = [(3, 3 ,'1x1'), (4, 3, '2x1'), (4, 4, '2x2'), (4, 4, '2x2'), (3, 4, '1x2')][jpeg_subsample]
 
-        for obj in result.boxes:
+    for r in range(len(result)):
+        for b in range(len(result[r].boxes)):
+            obj = result[r].boxes[b]
             box = obj.xywh
             box_x = int(offset[r][0] + box[0][0] - box[0][2]/2)
             box_y = int(offset[r][0] + box[0][1] - box[0][3]/2)
             box_w = int(box[0][2]+(2 << (hblock)))
             box_h = int(box[0][3]+(2 << (vblock)))
             crop_rects.append([max(0, box_x >> hblock << hblock),
-                               max(0, box_y >> vblock << vblock),
-                               min(box_w >> hblock << hblock,
-                                   width-max(0, box_x >> hblock << hblock)),
-                               min(box_h >> vblock << vblock, height-max(0, box_y >> vblock << vblock))])
+                            max(0, box_y >> vblock << vblock),
+                            min(box_w >> hblock << hblock,
+                                width-max(0, box_x >> hblock << hblock)),
+                            min(box_h >> vblock << vblock, height-max(0, box_y >> vblock << vblock))])
 
             # collect info about blurred object to return to client
             info.append({
@@ -103,6 +105,7 @@ def blurPicture(picture, keep):
                 "xywh": crop_rects[-1]
             })
 
+    if len(crop_rects)>0:
         # extract cropped jpeg data from boxes to be blurred
         with open(tmp, 'rb') as jpg:
             crops = jpeg.crop_multiple(jpg.read(), crop_rects, background_luminance=0, copynone=True)
