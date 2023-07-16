@@ -131,7 +131,16 @@ def blurPicture(picture, keep):
             subprocess.run('djpeg %s | cjpeg -sample %s -optimize -dct float -baseline -quality 90 -outfile %s' % (tmpcrop, sample, tmpcrop+'_tmp'), shell=True)
             os.replace(tmpcrop+'_tmp', tmpcrop)
             # jpegtran "drop"
-            subprocess.run('jpegtran -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
+            print( 'crop size', os.path.getsize(tmpcrop))
+            p = subprocess.run('jpegtran -restart 64 -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
+            print( 'after drop', os.path.getsize(tmp+'_tmp'))
+            if p.returncode != 0 :
+                print('crop XY: ',crop_rects[c][0], crop_rects[c][1])
+                # problem with original JPEG... we try to recompress it
+                subprocess.run('djpeg %s | cjpeg -optimize -smooth 10 -dct float -baseline -quality 90 -outfile %s' % (tmp, tmp+'_tmp'), shell=True)
+                print('after recompressing original', os.path.getsize(tmp+'_tmp'))
+                os.replace(tmp+'_tmp', tmp)
+                subprocess.run('jpegtran -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
             os.replace(tmp+'_tmp', tmp)
 
         # save detected objects data in JPEG comment at end of file
