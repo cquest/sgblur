@@ -61,24 +61,27 @@ def blurPicture(picture, keep):
             jpg.read())
         jpg.seek(0)
 
-        if width>=3840:
-            # call our detection model and dispatch threads on GPUs
+        # call our detection model and dispatch threads on GPUs
+        try:
             results = model.predict(source=tmp,
+                                    conf=0.05,
+                                    device=[gpu])
+        except:
+            return None,None
+        result = [results[0]]
+        offset = [[0,0]]
+
+        if width>=3840:
+            # detect again at higher resolution for smaller objects
+            try:
+                results = model.predict(source=tmp,
                                     conf=0.05,
                                     imgsz=min(int(width) >> 5 << 5,8192),
                                     device=[gpu])
-            result = [results[0]]
-            offset = [[0,0]]
-        else:
-            # call our detection model and dispatch threads on GPUs
-            try:
-                results = model.predict(source=tmp,
-                                        conf=0.05,
-                                        device=[gpu])
             except:
                 return None,None
-            result = [results[0]]
-            offset = [[0,0]]
+            result.append(results[0])
+            offset.append([0,0])
 
     info = []
     salt = None
