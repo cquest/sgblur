@@ -8,7 +8,6 @@ import exifread
 import json, uuid
 import torch
 
-
 jpeg = turbojpeg.TurboJPEG()
 model = YOLO("./models/yolov8s_panoramax.pt")
 model.names[0] = 'sign'
@@ -34,7 +33,11 @@ def blurPicture(picture, keep):
     """
 
     pid = os.getpid()
-    gpu = pid % torch.cuda.device_count()
+    if 'SGBLUR_GPUS' in os.environ:
+        gpu = pid % int(os.environ['SGBLUR_GPUS'])
+    else:
+        gpu = pid % torch.cuda.device_count()
+
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/blur%s.jpg' % pid
     tmpcrop = '/dev/shm/crop%s.jpg' % pid
