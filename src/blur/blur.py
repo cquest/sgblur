@@ -1,18 +1,14 @@
 import os, subprocess
+from datetime import datetime
 
-from ultralytics import YOLO
 import turbojpeg
 from PIL import Image, ImageFilter, ImageOps
 import hashlib, pathlib, time
 import exifread
 import json, uuid
-import torch
+import requests
 
 jpeg = turbojpeg.TurboJPEG()
-model = YOLO("./models/yolov8s_panoramax.pt")
-model.names[0] = 'sign'
-model.names[1] = 'plate'
-model.names[2] = 'face'
 
 crop_save_dir = '/data/crops'
 
@@ -25,6 +21,7 @@ def blurPicture(picture, keep):
 		Picture file
     keep : int
         1 to keep blurred part to allow deblur
+        2 keep detected road signs only, do not blur
 
     Returns
     -------
@@ -33,10 +30,6 @@ def blurPicture(picture, keep):
     """
 
     pid = os.getpid()
-    if 'SGBLUR_GPUS' in os.environ:
-        gpu = pid % int(os.environ['SGBLUR_GPUS'])
-    else:
-        gpu = pid % torch.cuda.device_count()
 
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/blur%s.jpg' % pid
@@ -46,7 +39,7 @@ def blurPicture(picture, keep):
         jpg.write(picture.file.read())
         jpg.seek(0)
         tags = exifread.process_file(jpg, details=False)
-    print("original", os.path.getsize(tmp))
+    print("keep", keep, "original", os.path.getsize(tmp))
 
     # solve image orientation
     if 'Image Orientation' in tags:
@@ -61,59 +54,30 @@ def blurPicture(picture, keep):
             jpg.read())
         jpg.seek(0)
 
-        # call our detection model and dispatch threads on GPUs
-        try:
-            results = model.predict(source=tmp,
-                                    conf=0.05,
-                                    device=[gpu])
-        except:
-            return None,None
-        result = [results[0]]
-        offset = [[0,0]]
 
-        if width>=3840:
-            # detect again at higher resolution for smaller objects
-            try:
-                results = model.predict(source=tmp,
-                                    conf=0.05,
-                                    imgsz=min(int(width) >> 5 << 5,8192),
-                                    device=[gpu])
-            except:
-                return None,None
-            result.append(results[0])
-            offset.append([0,0])
+    # call the detection microservice
+    try:
+        files = {'picture': open(tmp,'rb')}
+        r = requests.post('http://localhost:8001/detect/', files=files)
+        results = json.loads(r.text)
+        info = results['info']
+        crop_rects = results['crop_rects']
+    except:
+        return None
 
-    info = []
     salt = None
 
     # prepare bounding boxes list
-    crop_rects = []
 
     # get MCU maximum size (2^n) = 8 or 16 pixels subsamplings
     hblock, vblock, sample = [(3, 3 ,'1x1'), (4, 3, '2x1'), (4, 4, '2x2'), (4, 4, '2x2'), (3, 4, '1x2')][jpeg_subsample]
 
     blurred = False
-    for r in range(len(result)):
-        for b in range(len(result[r].boxes)):
-            obj = result[r].boxes[b]
-            box = obj.xywh
-            box_x = int(offset[r][0] + box[0][0] - box[0][2]/2)
-            box_y = int(offset[r][0] + box[0][1] - box[0][3]/2)
-            box_w = int(box[0][2]+(2 << (hblock)))
-            box_h = int(box[0][3]+(2 << (vblock)))
-            crop_rects.append([max(0, box_x >> hblock << hblock),
-                            max(0, box_y >> vblock << vblock),
-                            min(box_w >> hblock << hblock,
-                                width-max(0, box_x >> hblock << hblock)),
-                            min(box_h >> vblock << vblock, height-max(0, box_y >> vblock << vblock))])
+    print("hblock, vblock, sample :",hblock, vblock, sample)
 
-            # collect info about blurred object to return to client
-            info.append({
-                "class": model.names[int(obj.cls)],
-                "confidence": round(float(obj.conf),3),
-                "xywh": crop_rects[-1]
-            })
-
+    print(info)
+    print(crop_rects)
+    today = datetime.today().strftime('%Y-%m-%d')
     if len(crop_rects)>0:
         # extract cropped jpeg data from boxes to be blurred
         with open(tmp, 'rb') as jpg:
@@ -121,6 +85,9 @@ def blurPicture(picture, keep):
 
         # if face or plate, blur boxes and paste them onto original
         for c in range(len(crops)):
+            if keep=='2':
+                break
+            print(info[c]['class'])
             if info[c]['class'] == 'sign':
                 continue
             blurred = True
@@ -136,19 +103,31 @@ def blurPicture(picture, keep):
             # and blur
             boxblur = pixelated.filter(ImageFilter.BoxBlur(radius))
             boxblur.save(tmpcrop, subsampling=jpeg_subsample)
-            subprocess.run('djpeg %s | cjpeg -sample %s -optimize -dct float -baseline -quality 90 -outfile %s' % (tmpcrop, sample, tmpcrop+'_tmp'), shell=True)
+            subprocess.run('djpeg %s | cjpeg -sample %s -optimize -dct float -baseline -outfile %s' % (tmpcrop, sample, tmpcrop+'_tmp'), shell=True)
             os.replace(tmpcrop+'_tmp', tmpcrop)
+
             # jpegtran "drop"
             print( 'crop size', os.path.getsize(tmpcrop))
-            p = subprocess.run('jpegtran -restart 64 -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
+            p = subprocess.run('jpegtran -progressive -optimize -copy all -trim -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
             print( 'after drop', os.path.getsize(tmp+'_tmp'))
             if p.returncode != 0 :
-                print('crop XY: ',crop_rects[c][0], crop_rects[c][1])
+                print('crop %sx%s -> recrop %sx%s' % (img.width, img.height, crop_rects[c][2], crop_rects[c][3]))
+                subprocess.run('jpegtran -crop %sx%s+0+0 %s > %s' % (img.width, img.height, tmpcrop, tmpcrop+'_tmp'), shell=True)
+                p = subprocess.run('jpegtran -progressive -optimize -copy all -trim -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop+'_tmp', tmp, tmp+'_tmp'), shell=True)
+                if img.height != crop_rects[c][3]:
+                    input()
+
+            if p.returncode != 0 :
+                print('>>>>>> crop info: ',info[c])
+                input()
                 # problem with original JPEG... we try to recompress it
-                subprocess.run('djpeg %s | cjpeg -optimize -smooth 10 -dct float -baseline -quality 90 -outfile %s' % (tmp, tmp+'_tmp'), shell=True)
+                subprocess.run('djpeg %s | cjpeg -optimize -smooth 10 -dct float -baseline -outfile %s' % (tmp, tmp+'_tmp'), shell=True)
+                # copy EXIF tags
+                subprocess.run('exiftool -overwrite_original -tagsfromfile %s %s' % (tmp, tmp+'_tmp'), shell=True)
                 print('after recompressing original', os.path.getsize(tmp+'_tmp'))
                 os.replace(tmp+'_tmp', tmp)
-                subprocess.run('jpegtran -optimize -copy all -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
+                print('jpegtran -progressive -optimize -copy all -trim -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'))
+                subprocess.run('jpegtran -progressive -optimize -copy all -trim -drop +%s+%s %s %s > %s' % (crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
             os.replace(tmp+'_tmp', tmp)
 
         # save detected objects data in JPEG comment at end of file
@@ -169,16 +148,31 @@ def blurPicture(picture, keep):
                     h = hashlib.sha256()
                     h.update(((salt if not info[c]['class'] == 'sign' else str(info))+str(info[c])).encode())
                     cropname = h.hexdigest()+'.jpg'
-                    dirname = crop_save_dir+'/'+info[c]['class']+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
+                    if info[c]['class'] != 'sign':
+                        dirname = crop_save_dir+'/'+info[c]['class']+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
+                    else:
+                        dirname = crop_save_dir+'/'+info[c]['class']+'/'+today+'/'+cropname[0:2]+'/'
                     pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
                     with open(dirname+cropname, 'wb') as crop:
                         crop.write(crops[c])
-                    # round ctime/mtime to midnight
-                    daytime = int(time.time()) - int(time.time()) % 86400
-                    os.utime(dirname+cropname, (daytime, daytime))
+                    if info[c]['class'] == 'sign':
+                        print('copy EXIF')
+                        info2 = {   'width':width,
+                                    'height':height,
+                                    'xywh': info[c]['xywh'],
+                                    'confidence': info[c]['confidence'],
+                                    'offset': round((info[c]['xywh'][0]+info[c]['xywh'][2]/2.0)/width - 0.5,3)}
+                        # subprocess.run('exiv2 -ea %s | exiv2 -ia %s' % (tmp, dirname+cropname), shell=True)
+                        comment = json.dumps(info2, separators=(',', ':'))
+                        print(dirname+cropname, comment)
+                        subprocess.run('exiftool -q -overwrite_original -tagsfromfile %s -Comment=\'%s\' %s' % (tmp, comment, dirname+cropname), shell=True)
+                    else:
+                        # round ctime/mtime to midnight
+                        daytime = int(time.time()) - int(time.time()) % 86400
+                        os.utime(dirname+cropname, (daytime, daytime))
             info = { 'info': info, 'salt': salt }
 
-        if blurred:
+        if False:
             # regenerate EXIF thumbnail
             before_thumb = os.path.getsize(tmp)
             subprocess.run('exiftran -g -o %s %s' % (tmp+'_tmp', tmp), shell=True)
@@ -188,12 +182,13 @@ def blurPicture(picture, keep):
     # return result (original image if no blur needed)
     with open(tmp, 'rb') as jpg:
         original = jpg.read()
-    
-    try:
-        os.remove(tmp)
-        os.remove(tmpcrop)
-    except:
-        pass
+
+    if False:
+        try:
+            os.remove(tmp)
+            os.remove(tmpcrop)
+        except:
+            pass
 
     return original, info
 
