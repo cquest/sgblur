@@ -1,8 +1,9 @@
 ultralytics==8.0.135
 pyturbojpeg==1.7.2
-Pillow-simd
-uuid
-exifread
-python-multipart
-fastapi
-uvicorn
+Pillow-simd==9.0.0
+uuid=1.30
+exifread=3.0.0
+python-multipart==0.0.6
+fastapi=0.103.1
+uvicorn=0.23.2
+requests=2.31.0
