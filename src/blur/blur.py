@@ -73,10 +73,9 @@ def blurPicture(picture, keep):
     hblock, vblock, sample = [(3, 3 ,'1x1'), (4, 3, '2x1'), (4, 4, '2x2'), (4, 4, '2x2'), (3, 4, '1x2')][jpeg_subsample]
 
     blurred = False
-    print("hblock, vblock, sample :",hblock, vblock, sample)
+    # print("hblock, vblock, sample :",hblock, vblock, sample)
+    # print(info, crop_rects)
 
-    print(info)
-    print(crop_rects)
     today = datetime.today().strftime('%Y-%m-%d')
     if len(crop_rects)>0:
         # extract cropped jpeg data from boxes to be blurred
