@@ -58,7 +58,10 @@ def blurPicture(picture, keep):
     # call the detection microservice
     try:
         files = {'picture': open(tmp,'rb')}
-        r = requests.post('http://localhost:8001/detect/', files=files)
+        if keep == '2':
+            r = requests.post('http://localhost:8001/detect/?cls=sign', files=files)
+        else:
+            r = requests.post('http://localhost:8001/detect/', files=files)
         results = json.loads(r.text)
         info = results['info']
         crop_rects = results['crop_rects']

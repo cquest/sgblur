@@ -16,8 +16,8 @@ async def root():
 	responses = {200: {"content": {"application/json": {}}}},
 	response_class=Response
 )
-async def detect_api(picture: UploadFile):
-	result = detect.detector(picture)
+async def detect_api(picture:UploadFile, cls:str = ''):
+	result = detect.detector(picture, cls)
 
 	# For some reason garbage collection does not run automatically after
 	# a call to an AI model, so it must be done explicitely

@@ -9,13 +9,12 @@ from PIL import Image, ImageFilter, ImageOps
 import hashlib, pathlib, time
 import exifread
 import json, uuid
-import torch
 
 jpeg = turbojpeg.TurboJPEG()
 model = YOLO("./models/yolov8s_panoramax.pt")
-names = ['sign','plate',face']
+names = ['sign','plate','face']
 
-def detector(picture):
+def detector(picture, cls=''):
     """Detect faces and licence plates in a single picture.
 
     Parameters
@@ -80,6 +79,8 @@ def detector(picture):
     for r in range(len(result)):
         for b in range(len(result[r].boxes)):
             obj = result[r].boxes[b]
+            if cls !='' and not names[int(obj.cls)] in cls:
+                continue
             box = obj.xywh
             box_l = int(offset[r][0] + box[0][0] - box[0][2] * 0.5) >> hblock << hblock
             box_t = int(offset[r][0] + box[0][1] - box[0][3] * 0.5) >> vblock << vblock
