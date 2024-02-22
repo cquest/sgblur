@@ -13,9 +13,7 @@ import torch
 
 jpeg = turbojpeg.TurboJPEG()
 model = YOLO("./models/yolov8s_panoramax.pt")
-model.names[0] = 'sign'
-model.names[1] = 'plate'
-model.names[2] = 'face'
+names = ['sign','plate',face']
 
 def detector(picture):
     """Detect faces and licence plates in a single picture.
@@ -86,7 +84,7 @@ def detector(picture):
             box_l = int(offset[r][0] + box[0][0] - box[0][2] * 0.5) >> hblock << hblock
             box_t = int(offset[r][0] + box[0][1] - box[0][3] * 0.5) >> vblock << vblock
             box_w = int(box[0][2]) + (2 << hblock) >> hblock << hblock
-            if model.names[int(obj.cls)] == 'sign':
+            if names[int(obj.cls)] == 'sign':
                 box_h = int(box[0][3] * 1.25 + (2 << vblock)) >> vblock << vblock
             else:
                 box_h = int(box[0][3]) + (2 << vblock) >> vblock << vblock
@@ -107,7 +105,7 @@ def detector(picture):
                 crop_rects.append(crop)
                 # collect info about blurred object to return to client
                 info.append({
-                    "class": model.names[int(obj.cls)],
+                    "class": names[int(obj.cls)],
                     "confidence": round(float(obj.conf),3),
                     "xywh": crop_rects[-1]
                 })
