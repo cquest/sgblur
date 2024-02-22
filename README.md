@@ -11,7 +11,7 @@ Blurring is done on original JPEG pictures by manipulating low-level MCU in the 
 
 ### System dependencies
 
-These dependencies are needed for lossless JPEG tanasformations :
+These dependencies are needed for lossless JPEG transformations :
 
 - turbojpeg library and headers
 - exiftran
@@ -49,7 +49,7 @@ python -m venv env
 source ./env/bin/activate
 ```
 
-Install python depedencies for the API:
+Install python dependencies for the API:
 
 ```bash
 pip install -r requirements-api.txt
