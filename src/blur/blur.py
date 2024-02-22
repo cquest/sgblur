@@ -19,7 +19,7 @@ def blurPicture(picture, keep):
     ----------
     picture : tempfile
 		Picture file
-    keep : int
+    keep : str
         1 to keep blurred part to allow deblur
         2 keep detected road signs only, do not blur
 
