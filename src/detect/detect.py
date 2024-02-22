@@ -62,7 +62,7 @@ def detector(picture, cls=''):
     if False and width>=4992:
         # detect again at higher resolution for smaller objects
         try:
-            results = model.predict(source=tmp, conf=0.05, imgsz=min(int(width) >> 5 << 5,6144), half=True)
+            results = model.predict(source=tmp, conf=0.05, imgsz=min(int(width) >> 5 << 5,6144), half=True, verbose=False)
             result.append(results[0])
             offset.append([0,0])
         except:
