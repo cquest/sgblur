@@ -1,5 +1,5 @@
 ultralytics==8.0.175
-pyturbojpeg==1.7.2
+pyturbojpeg==1.7.3
 Pillow-simd
 uuid
 exifread
