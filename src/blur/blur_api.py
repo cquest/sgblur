@@ -17,7 +17,7 @@ async def root():
 	responses = {200: {"content": {"image/jpeg": {}}}},
 	response_class=Response
 )
-async def blur_picture(picture: UploadFile, keep=0):
+async def blur_picture(picture: UploadFile, keep: str | None = '0'):
 	blurredPic, blurInfo = blur.blurPicture(picture, keep)
 
 	# For some reason garbage collection does not run automatically after
@@ -54,7 +54,7 @@ async def blur_form():
 	responses={200: {"content": {"image/jpeg": {}}}},
 	response_class=Response
 )
-async def blur_picture(picture: UploadFile, idx: int, salt=''):
+async def deblur_picture(picture: UploadFile, idx: int, salt=''):
 	deblurredPic = blur.deblurPicture(picture, idx, salt)
 
 	# For some reason garbage collection does not run automatically after

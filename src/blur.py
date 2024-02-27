@@ -1,14 +1,18 @@
 import os, subprocess
-from datetime import datetime
 
+from ultralytics import YOLO
 import turbojpeg
 from PIL import Image, ImageFilter, ImageOps
 import hashlib, pathlib, time
 import exifread
 import json, uuid
-import requests
+import torch
 
 jpeg = turbojpeg.TurboJPEG()
+model = YOLO("./models/yolov8s_panoramax.pt")
+model.names[0] = 'sign'
+model.names[1] = 'plate'
+model.names[2] = 'face'
 
 crop_save_dir = '/data/crops'
 
@@ -19,9 +23,8 @@ def blurPicture(picture, keep):
     ----------
     picture : tempfile
 		Picture file
-    keep : str
+    keep : int
         1 to keep blurred part to allow deblur
-        2 keep detected road signs only, do not blur
 
     Returns
     -------
@@ -30,6 +33,10 @@ def blurPicture(picture, keep):
     """
 
     pid = os.getpid()
+    if 'SGBLUR_GPUS' in os.environ:
+        gpu = pid % int(os.environ['SGBLUR_GPUS'])
+    else:
+        gpu = pid % torch.cuda.device_count()
 
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/blur%s.jpg' % pid
@@ -39,7 +46,7 @@ def blurPicture(picture, keep):
         jpg.write(picture.file.read())
         jpg.seek(0)
         tags = exifread.process_file(jpg, details=False)
-    print("keep", keep, "original", os.path.getsize(tmp))
+    print("original", os.path.getsize(tmp))
 
     # solve image orientation
     if 'Image Orientation' in tags:
@@ -54,32 +61,76 @@ def blurPicture(picture, keep):
             jpg.read())
         jpg.seek(0)
 
+        # call our detection model and dispatch threads on GPUs
+        try:
+            results = model.predict(source=tmp,
+                                    conf=0.01,
+                                    device=[gpu])
+            result = [results[0]]
+            offset = [[0,0]]
+        except:
+            return None,None
 
-    # call the detection microservice
-    try:
-        files = {'picture': open(tmp,'rb')}
-        if keep == '2':
-            r = requests.post('http://localhost:8001/detect/?cls=sign', files=files)
-        else:
-            r = requests.post('http://localhost:8001/detect/', files=files)
-        results = json.loads(r.text)
-        info = results['info']
-        crop_rects = results['crop_rects']
-    except:
-        return None
+        if width>=4992:
+            # detect again at higher resolution for smaller objects
+            try:
+                results = model.predict(source=tmp,
+                                    conf=0.05,
+                                    imgsz=min(int(width) >> 5 << 5,8192),
+                                    device=[gpu])
+                result.append(results[0])
+                offset.append([0,0])
+            except:
+                return None,None
 
+    info = []
     salt = None
 
     # prepare bounding boxes list
+    crop_rects = []
 
     # get MCU maximum size (2^n) = 8 or 16 pixels subsamplings
     hblock, vblock, sample = [(3, 3 ,'1x1'), (4, 3, '2x1'), (4, 4, '2x2'), (4, 4, '2x2'), (3, 4, '1x2')][jpeg_subsample]
 
     blurred = False
-    # print("hblock, vblock, sample :",hblock, vblock, sample)
-    # print(info, crop_rects)
+    print("hblock, vbloxk, sample :",hblock, vblock, sample)
+    for r in range(len(result)):
+        for b in range(len(result[r].boxes)):
+            obj = result[r].boxes[b]
+            box = obj.xywh
+            box_l = int(offset[r][0] + box[0][0] - box[0][2] * 0.5) >> hblock << hblock
+            box_t = int(offset[r][0] + box[0][1] - box[0][3] * 0.5) >> vblock << vblock
+            box_w = int(box[0][2]) + (2 << hblock) >> hblock << hblock
+            if model.names[int(obj.cls)] == 'sign':
+                box_h = int(box[0][3] * 1.25 + (2 << vblock)) >> vblock << vblock
+            else:
+                box_h = int(box[0][3]) + (2 << vblock) >> vblock << vblock
 
-    today = datetime.today().strftime('%Y-%m-%d')
+            # remove overlaping crops
+            crop = [ max(0,box_l),
+                    max(0,box_t),
+                    min(box_w, width-max(0,box_l)),
+                    min(box_h, height-max(0,box_t))]
+            for c in range(len(crop_rects)):
+                if (crop[0] >= crop_rects[c][0]
+                        and crop[1] >= crop_rects[c][1]
+                        and crop[0]+crop[2] <= crop_rects[c][0]+crop_rects[c][2]
+                        and crop[1]+crop[3] <= crop_rects[c][1]+crop_rects[c][3]):
+                    crop = None
+                    break
+            if crop:
+                crop_rects.append(crop)
+
+            print(box)
+            print(crop_rects[-1])
+            # collect info about blurred object to return to client
+            info.append({
+                "class": model.names[int(obj.cls)],
+                "confidence": round(float(obj.conf),3),
+                "xywh": crop_rects[-1]
+            })
+
+    print(json.dumps(info))
     if len(crop_rects)>0:
         # extract cropped jpeg data from boxes to be blurred
         with open(tmp, 'rb') as jpg:
@@ -87,9 +138,6 @@ def blurPicture(picture, keep):
 
         # if face or plate, blur boxes and paste them onto original
         for c in range(len(crops)):
-            if keep=='2':
-                break
-            print(info[c]['class'])
             if info[c]['class'] == 'sign':
                 continue
             blurred = True
@@ -150,24 +198,13 @@ def blurPicture(picture, keep):
                     h = hashlib.sha256()
                     h.update(((salt if not info[c]['class'] == 'sign' else str(info))+str(info[c])).encode())
                     cropname = h.hexdigest()+'.jpg'
-                    if info[c]['class'] != 'sign':
-                        dirname = crop_save_dir+'/'+info[c]['class']+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
-                    else:
-                        dirname = crop_save_dir+'/'+info[c]['class']+'/'+today+'/'+cropname[0:2]+'/'
+                    dirname = crop_save_dir+'/'+info[c]['class']+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
                     pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
                     with open(dirname+cropname, 'wb') as crop:
                         crop.write(crops[c])
                     if info[c]['class'] == 'sign':
                         print('copy EXIF')
-                        info2 = {   'width':width,
-                                    'height':height,
-                                    'xywh': info[c]['xywh'],
-                                    'confidence': info[c]['confidence'],
-                                    'offset': round((info[c]['xywh'][0]+info[c]['xywh'][2]/2.0)/width - 0.5,3)}
-                        # subprocess.run('exiv2 -ea %s | exiv2 -ia %s' % (tmp, dirname+cropname), shell=True)
-                        comment = json.dumps(info2, separators=(',', ':'))
-                        print(dirname+cropname, comment)
-                        subprocess.run('exiftool -q -overwrite_original -tagsfromfile %s -Comment=\'%s\' %s' % (tmp, comment, dirname+cropname), shell=True)
+                        subprocess.run('exiftool -overwrite_original -tagsfromfile %s %s' % (tmp, dirname+cropname), shell=True)
                     else:
                         # round ctime/mtime to midnight
                         daytime = int(time.time()) - int(time.time()) % 86400
@@ -184,7 +221,7 @@ def blurPicture(picture, keep):
     # return result (original image if no blur needed)
     with open(tmp, 'rb') as jpg:
         original = jpg.read()
-
+    
     if False:
         try:
             os.remove(tmp)
