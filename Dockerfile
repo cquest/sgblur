@@ -33,6 +33,7 @@ RUN pip install -r ./requirements.txt
 COPY ./src ./src
 COPY ./scripts ./scripts
 COPY ./models ./models
+COPY ./demo.html ./
 COPY ./docker/docker-entrypoint.sh ./
 RUN chmod +x ./docker-entrypoint.sh
 
