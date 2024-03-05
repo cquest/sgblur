@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, Response
 import gc
-from . import blur
+from . import blur_monolith as blur
 import json
 
 app = FastAPI()
