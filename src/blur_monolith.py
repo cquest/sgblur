@@ -14,7 +14,7 @@ model.names[0] = 'sign'
 model.names[1] = 'plate'
 model.names[2] = 'face'
 
-crop_save_dir = '/data/crops'
+crop_save_dir = '/tmp/sgblur/crops'
 
 def blurPicture(picture, keep):
     """Blurs a single picture by detecting faces and licence plates.
