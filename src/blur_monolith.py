@@ -36,7 +36,10 @@ def blurPicture(picture, keep):
     if 'SGBLUR_GPUS' in os.environ:
         gpu = pid % int(os.environ['SGBLUR_GPUS'])
     else:
-        gpu = pid % torch.cuda.device_count()
+        if torch.cuda.device_count() > 0:
+            gpu = pid % torch.cuda.device_count()
+        else:
+            gpu = None
 
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/blur%s.jpg' % pid
