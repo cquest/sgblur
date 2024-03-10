@@ -59,7 +59,7 @@ def detector(picture, cls=''):
     except:
         return None
 
-    if False and width>=4992:
+    if width>=4992:
         # detect again at higher resolution for smaller objects
         try:
             results = model.predict(source=tmp, conf=0.05, imgsz=min(int(width) >> 5 << 5,6144), half=True, verbose=False)
