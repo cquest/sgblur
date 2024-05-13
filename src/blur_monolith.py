@@ -14,7 +14,7 @@ model.names[0] = 'sign'
 model.names[1] = 'plate'
 model.names[2] = 'face'
 
-crop_save_dir = '/data/crops'
+crop_save_dir = '/tmp/sgblur/crops'
 
 def blurPicture(picture, keep):
     """Blurs a single picture by detecting faces and licence plates.
@@ -36,7 +36,10 @@ def blurPicture(picture, keep):
     if 'SGBLUR_GPUS' in os.environ:
         gpu = pid % int(os.environ['SGBLUR_GPUS'])
     else:
-        gpu = pid % torch.cuda.device_count()
+        if torch.cuda.device_count() > 0:
+            gpu = pid % torch.cuda.device_count()
+        else:
+            gpu = None
 
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/blur%s.jpg' % pid
