@@ -1,7 +1,7 @@
 ultralytics==8.1.19
 pyturbojpeg==1.7.3
 Pillow-simd==9.0.0
-uuid=1.30
+uuid==1.30
 exifread=3.0.0
 python-multipart==0.0.9
 fastapi==0.110.0
