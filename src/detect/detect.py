@@ -35,8 +35,6 @@ def detector(picture, cls=''):
 
     with open(tmp, 'w+b') as jpg:
         jpg.write(picture.file.read())
-        jpg.seek(0)
-        tags = exifread.process_file(jpg, details=False)
 
     # get picture details
     with open(tmp, 'rb') as jpg:
