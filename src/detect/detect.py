@@ -11,7 +11,7 @@ import exifread
 import json, uuid
 
 jpeg = turbojpeg.TurboJPEG()
-model = YOLO("./models/yolov8s_panoramax.pt")
+model = YOLO("./models/yolov11l_panoramax.pt")
 names = ['sign','plate','face']
 
 def detector(picture, cls=''):
