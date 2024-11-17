@@ -9,7 +9,7 @@ import json, uuid
 import requests
 
 DEBUG=True
-JPEGTRAN_OPTS='-progressive -optimize -copy all'
+# JPEGTRAN_OPTS='-progressive -optimize -copy all'
 JPEGTRAN_OPTS='-optimize -copy all'
 
 jpeg = turbojpeg.TurboJPEG()
