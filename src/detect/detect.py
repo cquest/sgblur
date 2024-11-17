@@ -93,9 +93,9 @@ def detector(picture, cls=''):
                     min(box_h, height-max(0,box_t))]
             for c in range(len(crop_rects)):
                 if (crop[0] >= crop_rects[c][0]
-                        and crop[1] >= crop_rects[c][1]
-                        and crop[0]+crop[2] <= crop_rects[c][0]+crop_rects[c][2]
-                        and crop[1]+crop[3] <= crop_rects[c][1]+crop_rects[c][3]):
+                    and crop[1] >= crop_rects[c][1]
+                    and crop[0]+crop[2] <= crop_rects[c][0]+crop_rects[c][2]
+                    and crop[1]+crop[3] <= crop_rects[c][1]+crop_rects[c][3]):
                     crop = None
                     break
             if crop:
