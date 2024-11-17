@@ -8,7 +8,7 @@ import turbojpeg
 import json
 
 jpeg = turbojpeg.TurboJPEG()
-model = YOLO("./models/yolov11l_panoramax.pt")
+model = YOLO("./models/yolo11l_panoramax.pt")
 names = ['sign','plate','face']
 
 def detector(picture, cls=''):
