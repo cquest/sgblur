@@ -14,7 +14,7 @@ JPEGTRAN_OPTS='-optimize -copy all'
 
 jpeg = turbojpeg.TurboJPEG()
 
-crop_save_dir = '/data/crops'
+crop_save_dir = 'saved_crops'
 
 def blurPicture(picture, keep):
     """Blurs a single picture by detecting faces and licence plates.
