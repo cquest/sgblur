@@ -98,7 +98,6 @@ def detector(picture, cls=''):
 
     info = []
     bbox = []
-    print("hblock, vblock, sample :",hblock, vblock, sample)
     for r in range(len(result)):
         for b in range(len(result[r].boxes)):
             obj = result[r].boxes[b]
