@@ -59,7 +59,6 @@ def blurPicture(picture, keep):
     with open(tmp, 'rb') as jpg:
         width, height, jpeg_subsample, jpeg_colorspace = jpeg.decode_header(
             jpg.read())
-        jpg.seek(0)
 
 
     # call the detection microservice
@@ -72,19 +71,14 @@ def blurPicture(picture, keep):
         results = json.loads(r.text)
         info = results['info']
         crop_rects = results['crop_rects']
+        bbox = results['bbox'] if 'bbox' in results else None
     except:
         return None
 
     salt = None
 
-    # prepare bounding boxes list
-
     # get MCU maximum size (2^n) = 8 or 16 pixels subsamplings
     hblock, vblock, sample = [(3, 3 ,'1x1'), (4, 3, '2x1'), (4, 4, '2x2'), (4, 4, '2x2'), (3, 4, '1x2')][jpeg_subsample]
-
-    blurred = False
-    # print("hblock, vblock, sample :",hblock, vblock, sample)
-    # print(info, crop_rects)
 
     today = datetime.today().strftime('%Y-%m-%d')
     if len(crop_rects)>0:
@@ -99,7 +93,6 @@ def blurPicture(picture, keep):
             print(info[c]['class'])
             if info[c]['class'] == 'sign':
                 continue
-            blurred = True
             crop = open(tmpcrop,'wb')
             crop.write(crops[c])
             crop.close()
