@@ -38,17 +38,17 @@ def detector(picture, cls=''):
         width, height, jpeg_subsample, jpeg_colorspace = jpeg.decode_header(
             jpg.read())
 
-    # call our detection model and dispatch threads on GPUs
+    # call our detection model on reduced image to detect large close-up objects
     try:
-        results = model.predict(source=tmp, conf=0.05, verbose=False)
+        results = model.predict(source=tmp, conf=0.05, imgsz=1024, half=True, verbose=False)
         result = [results[0]]
         offset = [[0,0]]
     except:
         return None
 
-    # detect on reduced image to detect large close-up objects
+    # detect again with standard resolution
     try:
-        results = model.predict(source=tmp, conf=0.05, imgsz=1024, verbose=False)
+        results = model.predict(source=tmp, conf=0.05, imgsz=2048, half=True, verbose=False)
         result.append(results[0])
         offset.append([0,0])
     except:
