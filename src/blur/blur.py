@@ -153,7 +153,7 @@ def blurPicture(picture, keep):
                     if info[c]['class'] != 'sign':
                         dirname = crop_save_dir+'/'+info[c]['class']+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
                     else:
-                        dirname = crop_save_dir+'/'+info[c]['class']+'/'+today+'/'+cropname[0:2]+'/'
+                        dirname = crop_save_dir+'/'+info[c]['class']+'/'+today+'/'+str(round(info[c]['confidence'],1))+'/'
                     pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
                     with open(dirname+cropname, 'wb') as crop:
                         crop.write(crops[c])
