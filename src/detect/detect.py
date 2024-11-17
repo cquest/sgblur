@@ -70,6 +70,7 @@ def detector(picture, cls=''):
     hblock, vblock, sample = [(3, 3 ,'1x1'), (4, 3, '2x1'), (4, 4, '2x2'), (4, 4, '2x2'), (3, 4, '1x2')][jpeg_subsample]
 
     info = []
+    bbox = []
     print("hblock, vblock, sample :",hblock, vblock, sample)
     for r in range(len(result)):
         for b in range(len(result[r].boxes)):
@@ -105,5 +106,12 @@ def detector(picture, cls=''):
                     "confidence": round(float(obj.conf),3),
                     "xywh": crop_rects[-1]
                 })
+                bbox.append({   'top': int(box[0][1]),
+                                'left': int(box[0][0]),
+                                'bottom': int(box[0][1]+box[0][3]),
+                                'right': int(box[0][0]+box[0][2]),
+                                'cls': names[int(obj.cls)],
+                                'conf': round(float(obj.conf),3)
+                            })
 
-    return(json.dumps({'info':info, 'crop_rects': crop_rects}))
+    return(json.dumps({'info':info, 'crop_rects': crop_rects, 'bbox': bbox}))
