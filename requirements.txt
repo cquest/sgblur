@@ -3,7 +3,7 @@ pyturbojpeg==1.7.3
 Pillow-simd==9.0.0.post1
 uuid==1.30
 exifread==3.0.0
-python-multipart==0.0.9
+python-multipart==0.0.17
 fastapi==0.115.5
 uvicorn==0.32.0
 requests==2.32.3
