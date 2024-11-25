@@ -5,5 +5,5 @@ uuid==1.30
 exifread==3.0.0
 python-multipart==0.0.17
 fastapi==0.115.5
-uvicorn==0.32.0
+uvicorn==0.32.1
 requests==2.32.3
