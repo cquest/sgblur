@@ -1,6 +1,6 @@
 ultralytics==8.3.39
 pyturbojpeg==1.7.7
-Pillow-simd==9.0.0.post1
+Pillow-simd==9.5.0.post2
 uuid==1.30
 exifread==3.0.0
 python-multipart==0.0.19
