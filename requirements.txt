@@ -1,4 +1,4 @@
-ultralytics==8.3.39
+ultralytics==8.3.49
 pyturbojpeg==1.7.7
 Pillow-simd==9.0.0.post1
 uuid==1.30
