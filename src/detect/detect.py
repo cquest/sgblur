@@ -7,9 +7,18 @@ from ultralytics import YOLO
 import turbojpeg
 import json
 from PIL import Image
+import torch
 
 jpeg = turbojpeg.TurboJPEG()
-model = YOLO("./models/yolo11l_panoramax.pt")
+
+vram_avail, vram_total = torch.cuda.mem_get_info()
+if vram_avail < 6*(2**30):
+    model = YOLO("./models/yolov8s_panoramax.pt")
+    print("loading YOLO8s base model")
+    model_name = 'yolo8s'
+else:
+    model = YOLO("./models/yolo11l_panoramax.pt")
+    model_name = 'yolo11l'
 names = ['sign','plate','face']
 
 def detector(picture, cls=''):
