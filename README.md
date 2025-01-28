@@ -2,11 +2,11 @@
 
 This repository only contains __the blurring algorithms and API__.
 
-It is based on YOLOv8 for object detection (faces and license plates) using a custom trained model.
+It is based on YOLOv11 for object detection (faces and license plates) using a custom trained model.
 
 Blurring is done on original JPEG pictures by manipulating low-level MCU in the JPEG raw data, to keep all other parts of the original image unchanged (no decompression/recompression). This also saves CPU usage.
 
-The blurring service call a detection service with through local HTTP calls.
+The blurring service calls a detection service through local HTTP calls.
 
 
 ## Install
@@ -97,8 +97,6 @@ A **demo API** with a minimal web UI is running on https://panoramax.openstreetm
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
-
-You might want to read more [about available blur algorithms](./ALGORITHMS.md).
 
 
 ## License
