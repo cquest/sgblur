@@ -1,9 +1,9 @@
-ultralytics==8.3.31
+ultralytics==8.3.68
 pyturbojpeg==1.7.7
-Pillow==11.0.0
+Pillow==11.1.0
 uuid==1.30
 exifread==3.0.0
-python-multipart==0.0.17
-fastapi==0.115.5
-uvicorn==0.32.0
+python-multipart==0.0.20
+fastapi==0.115.7
+uvicorn==0.34.0
 requests==2.32.3
