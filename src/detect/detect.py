@@ -9,6 +9,8 @@ import json
 from PIL import Image
 import torch
 
+MIN_CONF=0.15
+
 jpeg = turbojpeg.TurboJPEG()
 
 vram_avail, vram_total = torch.cuda.mem_get_info()
@@ -54,32 +56,26 @@ def detector(picture, cls=''):
         width, height, jpeg_subsample, jpeg_colorspace = jpeg.decode_header(
             jpg.read())
 
-    # call our detection model on reduced image to detect large close-up objects
+    # detect on reduced image to detect large close-up objects
     try:
-        results = model.predict(src, conf=0.20, imgsz=1024, half=True, verbose=False)
+        results = model.predict(src, conf=MIN_CONF, imgsz=1024, half=True, verbose=False)
         result.append(results[0])
         offset.append(0)
-        if split>0:
-            result.append(results[1])
-            offset.append(split)
     except:
         return None
 
-    # detect again with standard resolution
+    # detect with standard resolution
     try:
-        results = model.predict(src, conf=0.20, imgsz=2048, half=True, verbose=False)
+        results = model.predict(src, conf=MIN_CONF, imgsz=2048, half=True, verbose=False)
         result.append(results[0])
         offset.append(0)
-        if split>0:
-            result.append(results[1])
-            offset.append(split)
     except:
         return None
 
     if width>=5760:
         # panoramic / 360° pictures
         if width >= height * 2:
-            # split image in left and right parts
+            # split image in left and right parts to save VRAM
             split = int(width/2)
             with Image.open(tmp) as img_left:
                 img_left.crop((0,0,split-1,height)).save(tmp_left)
@@ -89,25 +85,24 @@ def detector(picture, cls=''):
 
         # detect again at higher resolution for smaller objects
         try:
-            results = model.predict(source=src[0], conf=0.20, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=False)
+            results = model.predict(source=src[0], conf=MIN_CONF, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=False)
             result.append(results[0])
             offset.append(0)
-            if split>0:
-                results = model.predict(source=src[1], conf=0.20, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=False)
+            if len(src)>1:
+                results = model.predict(source=src[1], conf=MIN_CONF, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=False)
                 result.append(results[0])
                 offset.append(split)
         except:
             return None
 
-    # prepare bounding boxes list
+    # prepare MCU crop rect list
     crop_rects = []
 
     # get MCU maximum size (2^n) = 8 or 16 pixels subsamplings
     hblock, vblock, sample = [(3, 3 ,'1x1'), (4, 3, '2x1'), (4, 4, '2x2'), (4, 4, '2x2'), (3, 4, '1x2')][jpeg_subsample]
 
     info = []
-    bbox = []
-    for r in range(len(result)):
+    for r in reversed(range(len(result))):
         for b in range(len(result[r].boxes)):
             obj = result[r].boxes[b]
             if cls !='' and not names[int(obj.cls)] in cls:
@@ -121,32 +116,41 @@ def detector(picture, cls=''):
             else:
                 box_h = int(box[0][3]) + (2 << vblock) >> vblock << vblock
 
-            # remove overlaping detections
             crop = [ max(0,box_l),
                     max(0,box_t),
                     min(box_w, width-max(0,box_l)),
                     min(box_h, height-max(0,box_t))]
+            bbox = [int(offset[r] + obj.xyxy[0][0]),
+                    int(obj.xyxy[0][1]),
+                    int(offset[r] + obj.xyxy[0][2]),
+                    int(obj.xyxy[0][3])]
+
+            # remove overlaping detections
             for c in range(len(crop_rects)):
                 if (crop[0] >= crop_rects[c][0]
                     and crop[1] >= crop_rects[c][1]
                     and crop[0]+crop[2] <= crop_rects[c][0]+crop_rects[c][2]
                     and crop[1]+crop[3] <= crop_rects[c][1]+crop_rects[c][3]):
+                    # if new detection is smaller replace the previous one
+                    if crop[2] * crop[3] < crop_rects[c][2] * crop_rects[c][3]:
+                        crop_rects[c] =crop
+                        info[c] = {
+                            "class": names[int(obj.cls)],
+                            "confidence": round(float(obj.conf),3),
+                            "xywh": crop_rects[c],
+                            "bbox": bbox
+                            }
                     crop = None
                     break
+
             if crop:
-                crop_rects.append(crop)
                 # collect info about blurred object to return to client
+                crop_rects.append(crop)
                 info.append({
                     "class": names[int(obj.cls)],
                     "confidence": round(float(obj.conf),3),
-                    "xywh": crop_rects[-1]
-                })
-                bbox.append({   'top': int(box[0][1]),
-                                'left': int(offset[r]+box[0][0]),
-                                'bottom': int(box[0][1]+box[0][3]),
-                                'right': int(offset[r]+box[0][0]+box[0][2]),
-                                'cls': names[int(obj.cls)],
-                                'conf': round(float(obj.conf),3)
-                            })
+                    "xywh": crop_rects[-1],
+                    "bbox": bbox
+                    })
 
-    return(json.dumps({'info':info, 'crop_rects': crop_rects, 'bbox': bbox}))
+    return(json.dumps({'model': model_name, 'info': info, 'crop_rects': crop_rects}))
