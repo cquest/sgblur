@@ -23,6 +23,23 @@ else:
     model_name = 'yolo11l'
 names = ['sign','plate','face']
 
+
+def iou(box1, box2):
+    """ compute Intersection over Union (IoU) of two bbox
+    """
+    Aint = max(box1[0], box2[0])
+    Bint = max(box1[1], box2[1])
+    Cint = min(box1[2], box2[2])
+    Dint = min(box1[3], box2[3])
+    if Cint<Aint or Dint<Bint:
+        return 0
+    inter = (Cint-Aint) * (Dint-Bint)
+    X = (box1[2]-box1[0]) * (box1[3]-box1[1])
+    Y = (box2[2]-box2[0]) * (box2[3]-box2[1])
+    union = X+Y-inter
+    return inter/union
+
+
 def detector(picture, cls=''):
     """Detect faces and licence plates in a single picture.
 
@@ -127,7 +144,7 @@ def detector(picture, cls=''):
 
             # remove overlaping detections
             for c in range(len(crop_rects)):
-                if (crop[0] >= crop_rects[c][0]
+                if iou(bbox, info[c]['bbox']) > 0.33 or (crop[0] >= crop_rects[c][0]
                     and crop[1] >= crop_rects[c][1]
                     and crop[0]+crop[2] <= crop_rects[c][0]+crop_rects[c][2]
                     and crop[1]+crop[3] <= crop_rects[c][1]+crop_rects[c][3]):
