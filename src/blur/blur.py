@@ -2,13 +2,13 @@ import os, subprocess
 from datetime import datetime
 
 import turbojpeg
-from PIL import Image, ImageFilter, ImageOps
+from PIL import Image, ImageFilter, ImageOps, ImageDraw
 import hashlib, pathlib, time
 import exifread
 import json, uuid
 import requests
 
-DEBUG=True
+DEBUG=False
 # JPEGTRAN_OPTS='-progressive -optimize -copy all'
 JPEGTRAN_OPTS='-optimize -copy all'
 
@@ -96,18 +96,33 @@ def blurPicture(picture, keep):
                 print(info[c]['class'], crop_rects[c])
             if info[c]['class'] == 'sign':
                 continue
+
+            bbox = info[c]['bbox']
+            xywh = info[c]['xywh']
+            box = (bbox[0]-xywh[0], bbox[1]-xywh[1],bbox[2]-xywh[0], bbox[3]-xywh[1])
+
+            if xywh[2] < 12 and xywh[3] < 12:
+                if DEBUG:
+                    print('too small, skip')
+                continue
+
             crop = open(tmpcrop,'wb')
             crop.write(crops[c])
             crop.close()
             # pillow based blurring
             img = Image.open(tmpcrop)
+            ccrop = img.crop(box)
             radius = max(int(max(img.width, img.height)/12) >> 3 << 3, 8)
             # pixelate first
-            reduced = ImageOps.scale(img, 1/radius, resample=0)
+            reduced = ImageOps.scale(ccrop, 1/radius, resample=0)
             pixelated = ImageOps.scale(reduced, radius, resample=0)
             # and blur
             boxblur = pixelated.filter(ImageFilter.BoxBlur(radius))
-            boxblur.save(tmpcrop, subsampling=jpeg_subsample)
+            img.paste(boxblur, (bbox[0]-xywh[0], bbox[1]-xywh[1]))
+            if DEBUG:
+                draw = ImageDraw.Draw(img)
+                draw.rectangle(box, outline=(0, 255, 255))
+            img.save(tmpcrop, subsampling=jpeg_subsample)
             subprocess.run('djpeg %s | cjpeg -sample %s -optimize -dct float -baseline -outfile %s' % (tmpcrop, sample, tmpcrop+'_tmp'), shell=True)
             os.replace(tmpcrop+'_tmp', tmpcrop)
 
