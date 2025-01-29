@@ -24,6 +24,17 @@ jpeg = turbojpeg.TurboJPEG()
 
 crop_save_dir = 'saved_crops'
 
+def copytags(src, dst, comment=None):
+    if False:
+        comment = ' -Comment=\'%s\' ' % comment if comment else ''
+        subprocess.run('-overwrite_original -tagsfromfile %s %s %s' % (src, comment, dst), shell=True)
+    else:
+        tags = piexif.load(src)
+        tags['thumbnail'] = None
+        if comment:
+            tags["Exif"][piexif.ExifIFD.UserComment] = piexif.helper.UserComment.dump(comment)
+        piexif.insert(piexif.dump(tags), dst)
+
 def blurPicture(picture, keep):
     """Blurs a single picture by detecting faces and licence plates.
 
@@ -165,7 +176,7 @@ def blurPicture(picture, keep):
                 # problem with original JPEG... we try to recompress it
                 subprocess.run('djpeg %s | cjpeg -optimize -smooth 10 -dct float -baseline -outfile %s' % (tmp, tmp+'_tmp'), shell=True)
                 # copy EXIF tags
-                subprocess.run('exiftool -overwrite_original -tagsfromfile %s %s' % (tmp, tmp+'_tmp'), shell=True)
+                copytags(tmp, tmp+'_tmp')
                 if DEBUG:
                     timing()
                     print('after recompressing original', os.path.getsize(tmp+'_tmp'))
@@ -214,7 +225,7 @@ def blurPicture(picture, keep):
                         comment = json.dumps(info2, separators=(',', ':'))
                         if DEBUG:
                             print(dirname+cropname, comment)
-                        subprocess.run('exiftool -q -overwrite_original -tagsfromfile %s -Comment=\'%s\' %s' % (tmp, comment, dirname+cropname), shell=True)
+                        copytags(tmp, dirname+cropname, comment=comment)
                     else:
                         # round ctime/mtime to midnight
                         daytime = int(time.time()) - int(time.time()) % 86400
