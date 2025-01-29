@@ -114,11 +114,11 @@ def detector(picture, cls=''):
         timing('detect XL')
         # detect again at higher resolution for smaller objects
         try:
-            results = model.predict(source=src[0], conf=MIN_CONF, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=False)
+            results = model.predict(source=src[0], conf=MIN_CONF, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=VERBOSE)
             result.append(results[0])
             offset.append(0)
             if len(src)>1:
-                results = model.predict(source=src[1], conf=MIN_CONF, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=False)
+                results = model.predict(source=src[1], conf=MIN_CONF, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=VERBOSE)
                 result.append(results[0])
                 offset.append(split)
             timing('detect XL end')
