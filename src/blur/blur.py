@@ -7,8 +7,16 @@ import hashlib, pathlib, time
 import exifread
 import json, uuid
 import requests
+import piexif, piexif.helper
 
-DEBUG=False
+DEBUG=True
+TIMING=True
+
+def timing(msg=''):
+    if TIMING:
+        print('blur:', round(time.time()-start,3),msg)
+
+
 # JPEGTRAN_OPTS='-progressive -optimize -copy all'
 JPEGTRAN_OPTS='-optimize -copy all'
 
@@ -34,6 +42,9 @@ def blurPicture(picture, keep):
     """
 
     pid = os.getpid()
+    global start
+    start = time.time()
+    timing('start')
 
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/blur%s.jpg' % pid
@@ -64,6 +75,8 @@ def blurPicture(picture, keep):
 
 
     # call the detection microservice
+    if DEBUG:
+        timing('call detection')
     try:
         files = {'picture': open(tmp,'rb')}
         if keep == '2':
@@ -83,6 +96,9 @@ def blurPicture(picture, keep):
     hblock, vblock, sample = [(3, 3 ,'1x1'), (4, 3, '2x1'), (4, 4, '2x2'), (4, 4, '2x2'), (3, 4, '1x2')][jpeg_subsample]
 
     today = datetime.today().strftime('%Y-%m-%d')
+    if DEBUG:
+        timing()
+        print(len(crop_rects), 'detections')
     if len(crop_rects)>0:
         # extract cropped jpeg data from boxes to be blurred
         with open(tmp, 'rb') as jpg:
@@ -128,9 +144,11 @@ def blurPicture(picture, keep):
 
             # jpegtran "drop"
             if DEBUG:
+                timing()
                 print( 'crop size', os.path.getsize(tmpcrop))
             p = subprocess.run('jpegtran %s -trim -drop +%s+%s %s %s > %s' % (JPEGTRAN_OPTS, crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
             if DEBUG:
+                timing()
                 print( 'after drop', os.path.getsize(tmp+'_tmp'))
             if p.returncode != 0 :
                 if DEBUG:
@@ -142,16 +160,18 @@ def blurPicture(picture, keep):
 
             if p.returncode != 0 :
                 if DEBUG:
+                    timing()
                     print('>>>>>> crop info: ',info[c])
-                    input()
                 # problem with original JPEG... we try to recompress it
                 subprocess.run('djpeg %s | cjpeg -optimize -smooth 10 -dct float -baseline -outfile %s' % (tmp, tmp+'_tmp'), shell=True)
                 # copy EXIF tags
                 subprocess.run('exiftool -overwrite_original -tagsfromfile %s %s' % (tmp, tmp+'_tmp'), shell=True)
                 if DEBUG:
+                    timing()
                     print('after recompressing original', os.path.getsize(tmp+'_tmp'))
                 os.replace(tmp+'_tmp', tmp)
                 if DEBUG:
+                    timing()
                     print('jpegtran %s -trim -drop +%s+%s %s %s > %s' % (JPEGTRAN_OPTS, crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'))
                 subprocess.run('jpegtran %s -trim -drop +%s+%s %s %s > %s' % (JPEGTRAN_OPTS, crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
             os.replace(tmp+'_tmp', tmp)
@@ -183,6 +203,7 @@ def blurPicture(picture, keep):
                         crop.write(crops[c])
                     if info[c]['class'] == 'sign':
                         if DEBUG:
+                            timing()
                             print('copy EXIF')
                         info2 = {   'width':width,
                                     'height':height,
@@ -206,6 +227,7 @@ def blurPicture(picture, keep):
             subprocess.run('exiftran -g -o %s %s' % (tmp+'_tmp', tmp), shell=True)
             os.replace(tmp+'_tmp', tmp)
             if DEBUG:
+                timing()
                 print("after thumbnail", os.path.getsize(tmp), (100*(os.path.getsize(tmp)-before_thumb)/before_thumb))
 
     # return result (original image if no blur needed)
@@ -219,6 +241,7 @@ def blurPicture(picture, keep):
         except:
             pass
 
+    timing('end')
     return original, info
 
 
