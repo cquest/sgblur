@@ -84,8 +84,10 @@ def detector(picture, cls=''):
             jpg.read())
 
     # detect on reduced image to detect large close-up objects
+    img = Image.open(tmp)
     try:
-        results = model.predict(src, conf=MIN_CONF, imgsz=1024, half=True, verbose=False)
+        timing('detect S')
+        results = model.predict(img, conf=MIN_CONF, imgsz=1024, half=True, verbose=VERBOSE)
         result.append(results[0])
         offset.append(0)
     except:
@@ -93,7 +95,8 @@ def detector(picture, cls=''):
 
     # detect with standard resolution
     try:
-        results = model.predict(src, conf=MIN_CONF, imgsz=2048, half=True, verbose=False)
+        timing('detect L')
+        results = model.predict(img, conf=MIN_CONF, imgsz=2048, half=True, verbose=VERBOSE)
         result.append(results[0])
         offset.append(0)
     except:
