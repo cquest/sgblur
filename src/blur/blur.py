@@ -9,8 +9,8 @@ import json, uuid
 import requests
 import piexif, piexif.helper
 
-DEBUG=True
-TIMING=True
+DEBUG=False
+TIMING=False
 
 def timing(msg=''):
     if TIMING:
@@ -60,6 +60,9 @@ def blurPicture(picture, keep):
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/blur%s.jpg' % pid
     tmpcrop = '/dev/shm/crop%s.jpg' % pid
+
+    nb_blurred = 0
+    nb_saved = 0
 
     with open(tmp, 'w+b') as jpg:
         jpg.write(picture.file.read())
@@ -133,6 +136,7 @@ def blurPicture(picture, keep):
                     print('too small, skip')
                 continue
 
+            nb_blurred += 1
             crop = open(tmpcrop,'wb')
             crop.write(crops[c])
             crop.close()
@@ -202,6 +206,7 @@ def blurPicture(picture, keep):
             for c in range(len(crops)):
                 if ((keep == '1' and info[c]['confidence'] < 0.5 and info[c]['class'] in ['face', 'plate'])
                         or (info[c]['confidence'] > 0.2 and info[c]['class'] == 'sign')):
+                    nb_saved += 1
                     h = hashlib.sha256()
                     h.update(((salt if not info[c]['class'] == 'sign' else str(info))+str(info[c])).encode())
                     cropname = h.hexdigest()+'.jpg'
@@ -253,6 +258,8 @@ def blurPicture(picture, keep):
             pass
 
     timing('end')
+    # summary output
+    print('%s Mpx picture, %s blur, %s saved in %ss' % (round(width/1024.0*height/1024.0,1), nb_blurred, nb_saved, round(time.time()-start,3)))
     return original, info
 
 
