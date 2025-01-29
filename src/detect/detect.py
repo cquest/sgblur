@@ -108,11 +108,8 @@ def detector(picture, cls=''):
         if width >= height * 2:
             # split image in left and right parts to save VRAM
             split = int(width/2)
-            with Image.open(tmp) as img_left:
-                img_left.crop((0,0,split-1,height)).save(tmp_left)
-            with Image.open(tmp) as img_right:
-                img_right.crop((split,0,width,height)).save(tmp_right)
-            src = [tmp_left, tmp_right]
+            src = [ img.crop((0,0,split-1,height)),
+                    img.crop((split,0,width,height)) ]
 
         timing('detect XL')
         # detect again at higher resolution for smaller objects
