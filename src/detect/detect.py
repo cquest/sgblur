@@ -5,11 +5,13 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 from ultralytics import YOLO
 import turbojpeg
-import json
+import json, time
 from PIL import Image
 import torch
 
 MIN_CONF=0.15
+VERBOSE=True
+TIMING=True
 
 jpeg = turbojpeg.TurboJPEG()
 
@@ -40,6 +42,11 @@ def iou(box1, box2):
     return inter/union
 
 
+def timing(msg=''):
+    if TIMING:
+        print('detect:', round(time.time()-start,3), msg)
+
+
 def detector(picture, cls=''):
     """Detect faces and licence plates in a single picture.
 
@@ -54,6 +61,9 @@ def detector(picture, cls=''):
         the blurred image
     """
 
+    global start
+    start = time.time()
+    timing('detect start')
     pid = os.getpid()
 
     # copy received JPEG picture to temporary file
@@ -90,6 +100,7 @@ def detector(picture, cls=''):
         return None
 
     if width>=5760:
+        timing('split 360')
         # panoramic / 360° pictures
         if width >= height * 2:
             # split image in left and right parts to save VRAM
@@ -100,6 +111,7 @@ def detector(picture, cls=''):
                 img_right.crop((split,0,width,height)).save(tmp_right)
             src = [tmp_left, tmp_right]
 
+        timing('detect XL')
         # detect again at higher resolution for smaller objects
         try:
             results = model.predict(source=src[0], conf=MIN_CONF, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=False)
@@ -109,6 +121,7 @@ def detector(picture, cls=''):
                 results = model.predict(source=src[1], conf=MIN_CONF, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=False)
                 result.append(results[0])
                 offset.append(split)
+            timing('detect XL end')
         except:
             return None
 
@@ -170,4 +183,5 @@ def detector(picture, cls=''):
                     "bbox": bbox
                     })
 
+    timing('detect finished')
     return(json.dumps({'model': model_name, 'info': info, 'crop_rects': crop_rects}))
