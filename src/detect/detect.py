@@ -5,7 +5,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 from ultralytics import YOLO
 import turbojpeg
-import json, time
+import json, time, gc
 from PIL import Image
 import torch
 
@@ -47,6 +47,21 @@ def timing(msg=''):
         print('detect:', round(time.time()-start,3), msg)
 
 
+def vram_check(gb):
+    torch.cuda.empty_cache()
+    vram_avail, vram_total = torch.cuda.mem_get_info()
+    while vram_avail >> 30 < gb:
+        print('wait for vram', gb, vram_avail >> 30)
+        torch.cuda.empty_cache()
+        time.sleep(0.1)
+        vram_avail, vram_total = torch.cuda.mem_get_info()
+
+
+def vram_free():
+    torch.cuda.empty_cache()
+    gc.collect()
+
+
 def detector(picture, cls=''):
     """Detect faces and licence plates in a single picture.
 
@@ -85,9 +100,12 @@ def detector(picture, cls=''):
 
     # detect on reduced image to detect large close-up objects
     img = Image.open(tmp)
+
     try:
         timing('detect S')
+        vram_check(2)
         results = model.predict(img, conf=MIN_CONF, imgsz=1024, half=True, verbose=VERBOSE)
+        vram_free()
         result.append(results[0])
         offset.append(0)
     except:
@@ -96,7 +114,9 @@ def detector(picture, cls=''):
     # detect with standard resolution
     try:
         timing('detect L')
+        vram_check(4)
         results = model.predict(img, conf=MIN_CONF, imgsz=2048, half=True, verbose=VERBOSE)
+        vram_free()
         result.append(results[0])
         offset.append(0)
     except:
@@ -114,11 +134,15 @@ def detector(picture, cls=''):
         timing('detect XL')
         # detect again at higher resolution for smaller objects
         try:
+            vram_check(6)
             results = model.predict(source=src[0], conf=MIN_CONF, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=VERBOSE)
+            vram_free()
             result.append(results[0])
             offset.append(0)
             if len(src)>1:
+                vram_check(6)
                 results = model.predict(source=src[1], conf=MIN_CONF, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=VERBOSE)
+                vram_free()
                 result.append(results[0])
                 offset.append(split)
             timing('detect XL end')
@@ -182,6 +206,10 @@ def detector(picture, cls=''):
                     "xywh": crop_rects[-1],
                     "bbox": bbox
                     })
+
+	# For some reason garbage collection does not run automatically after
+	# a call to an AI model, so it must be done explicitely
+    vram_free()
 
     timing('detect finished')
     return(json.dumps({'model': model_name, 'info': info, 'crop_rects': crop_rects}))
