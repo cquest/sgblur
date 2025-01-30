@@ -21,8 +21,8 @@ if vram_avail < 6*(2**30):
     print("loading YOLO8s base model")
     model_name = 'yolo8s'
 else:
-    model = YOLO("./models/yolo11l_panoramax.pt")
-    model_name = 'yolo11l'
+    model = YOLO("./models/yolo11m_panoramax.pt")
+    model_name = 'yolo11m'
 names = ['sign','plate','face']
 
 
