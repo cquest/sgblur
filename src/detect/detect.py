@@ -83,8 +83,6 @@ def detector(picture, cls=''):
 
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/detect%s.jpg' % pid
-    tmp_left = '/dev/shm/detect%sL.jpg' % pid
-    tmp_right = '/dev/shm/detect%sR.jpg' % pid
     src = [tmp]
     result = []
     split = 0
