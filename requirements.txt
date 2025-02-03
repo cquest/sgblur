@@ -4,6 +4,6 @@ Pillow-simd==9.0.0.post1
 uuid==1.30
 exifread==3.0.0
 python-multipart==0.0.19
-fastapi==0.115.5
+fastapi==0.115.8
 uvicorn==0.32.1
 requests==2.32.3
