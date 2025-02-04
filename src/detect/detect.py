@@ -1,7 +1,7 @@
 import os
 
-os.environ['CUDA_VISIBLE_DEVICES'] = str(os.getpid() % 3)
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+if 'SGBLUR_DEVICES' in os.environ:
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(os.getpid() % int(os.environ['SGBLUR_DEVICES']))
 
 from ultralytics import YOLO
 import turbojpeg
