@@ -1,7 +1,6 @@
 from fastapi import FastAPI, UploadFile, Response
 import gc
 from . import detect
-import json
 
 app = FastAPI()
 print("API is preparing to start...")
