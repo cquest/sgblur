@@ -10,8 +10,10 @@ from PIL import Image
 import torch
 
 MIN_CONF=0.15
-VERBOSE=True
-TIMING=True
+VERBOSE=False
+HALF=True
+
+TIMING=False
 
 jpeg = turbojpeg.TurboJPEG()
 
@@ -46,20 +48,27 @@ def timing(msg=''):
     if TIMING:
         print('detect:', round(time.time()-start,3), msg)
 
-
-def vram_check(gb):
-    torch.cuda.empty_cache()
-    vram_avail, vram_total = torch.cuda.mem_get_info()
-    while vram_avail >> 30 < gb:
-        print('wait for vram', gb, vram_avail >> 30)
-        torch.cuda.empty_cache()
-        time.sleep(0.1)
-        vram_avail, vram_total = torch.cuda.mem_get_info()
-
-
 def vram_free():
     torch.cuda.empty_cache()
     gc.collect()
+
+def model_detect(model, img, imgsz=1024, gb=1):
+    results = None
+    while not results:
+        torch.cuda.empty_cache()
+        vram_avail, vram_total = torch.cuda.mem_get_info()
+        while vram_avail >> 30 < gb:
+            print('wait for vram', gb, vram_avail >> 30)
+            torch.cuda.empty_cache()
+            time.sleep((time.time() % 1/5)) # random wait 0-0.2s
+            vram_avail, vram_total = torch.cuda.mem_get_info()
+
+        try:
+            results = model.predict(img, conf=MIN_CONF, imgsz=imgsz, half=HALF, verbose=VERBOSE)
+        except:
+            pass
+    vram_free()
+    return results
 
 
 def detector(picture, cls=''):
@@ -83,7 +92,6 @@ def detector(picture, cls=''):
 
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/detect%s.jpg' % pid
-    src = [tmp]
     result = []
     split = 0
     offset = []
@@ -98,27 +106,18 @@ def detector(picture, cls=''):
 
     # detect on reduced image to detect large close-up objects
     img = Image.open(tmp)
+    src = [img]
 
-    try:
-        timing('detect S')
-        vram_check(2)
-        results = model.predict(img, conf=MIN_CONF, imgsz=1024, half=True, verbose=VERBOSE)
-        vram_free()
-        result.append(results[0])
-        offset.append(0)
-    except:
-        return None
+    timing('detect S')
+    results = model_detect(model, img, imgsz=1024, gb=1)
+    result.append(results[0])
+    offset.append(0)
 
     # detect with standard resolution
-    try:
-        timing('detect L')
-        vram_check(4)
-        results = model.predict(img, conf=MIN_CONF, imgsz=2048, half=True, verbose=VERBOSE)
-        vram_free()
-        result.append(results[0])
-        offset.append(0)
-    except:
-        return None
+    timing('detect L')
+    results = model_detect(model, img, imgsz=2048, gb=2)
+    result.append(results[0])
+    offset.append(0)
 
     if width>=5760:
         timing('split 360')
@@ -131,21 +130,11 @@ def detector(picture, cls=''):
 
         timing('detect XL')
         # detect again at higher resolution for smaller objects
-        try:
-            vram_check(6)
-            results = model.predict(source=src[0], conf=MIN_CONF, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=VERBOSE)
-            vram_free()
+        for i in src:
+            results = model_detect(model, i, imgsz=min(int(width) >> 5 << 5,3840), gb=6)
             result.append(results[0])
             offset.append(0)
-            if len(src)>1:
-                vram_check(6)
-                results = model.predict(source=src[1], conf=MIN_CONF, imgsz=min(int(width) >> 5 << 5,3840), half=True, verbose=VERBOSE)
-                vram_free()
-                result.append(results[0])
-                offset.append(split)
-            timing('detect XL end')
-        except:
-            return None
+        timing('detect XL end')
 
     # prepare MCU crop rect list
     crop_rects = []
