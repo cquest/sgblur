@@ -76,7 +76,8 @@ def blurPicture(picture, keep):
 
     # solve image orientation
     if tags and 'Image Orientation' in tags:
-        if 'normal' not in str(tags['Image Orientation']):
+        if ('normal' not in str(tags['Image Orientation'])
+                and str(tags['Image Orientation'])!='0'):
             subprocess.run('exiftran -a %s -o %s' % (tmp, tmp+'_tmp'), shell=True)
             if DEBUG:
                 print("after exiftran", os.path.getsize(tmp+'_tmp'))
