@@ -25,17 +25,13 @@ jpeg = turbojpeg.TurboJPEG()
 crop_save_dir = 'saved_crops'
 
 def copytags(src, dst, comment=None):
-    if False:
-        comment = ' -Comment=\'%s\' ' % comment if comment else ''
-        subprocess.run('-overwrite_original -tagsfromfile %s %s %s' % (src, comment, dst), shell=True)
-    else:
-        tags = piexif.load(src)
-        tags['thumbnail'] = None
-        if comment:
-            tags["Exif"][piexif.ExifIFD.UserComment] = piexif.helper.UserComment.dump(comment)
-        piexif.insert(piexif.dump(tags), dst)
+    tags = piexif.load(src)
+    tags['thumbnail'] = None
+    if comment:
+        tags["Exif"][piexif.ExifIFD.UserComment] = piexif.helper.UserComment.dump(comment)
+    piexif.insert(piexif.dump(tags), dst)
 
-def blurPicture(picture, keep):
+def blurPicture(picture, keep, debug):
     """Blurs a single picture by detecting faces and licence plates.
 
     Parameters
