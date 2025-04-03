@@ -102,7 +102,7 @@ def blurPicture(picture, keep, debug):
             print('detect info:',info)
             print('detect bbox:',bbox)
     except:
-        return None
+        return None,'detection failed'
 
     salt = None
 
