@@ -170,8 +170,8 @@ def blurPicture(picture, keep, debug):
                     print('crop %sx%s -> recrop %sx%s' % (img.width, img.height, crop_rects[c][2], crop_rects[c][3]))
                 subprocess.run('jpegtran -crop %sx%s+0+0 %s > %s' % (img.width, img.height, tmpcrop, tmpcrop+'_tmp'), shell=True)
                 p = subprocess.run('jpegtran %s -trim -drop +%s+%s %s %s > %s' % (JPEGTRAN_OPTS, crop_rects[c][0], crop_rects[c][1], tmpcrop+'_tmp', tmp, tmp+'_tmp'), shell=True)
-                if img.height != crop_rects[c][3]:
-                    input()
+                #if img.height != crop_rects[c][3]:
+                #    input()
 
             if p.returncode != 0 :
                 if DEBUG:
