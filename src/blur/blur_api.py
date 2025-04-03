@@ -17,15 +17,15 @@ async def root():
 	responses = {200: {"content": {"image/jpeg": {}}}},
 	response_class=Response
 )
-async def blur_picture(picture: UploadFile, keep: str | None = '0'):
-	blurredPic, blurInfo = blur.blurPicture(picture, keep)
+async def blur_picture(picture: UploadFile, debug: str|None='0' , keep: str|None='0'):
+	blurredPic, blurInfo = blur.blurPicture(picture, keep, debug)
 
 	# For some reason garbage collection does not run automatically after
 	# a call to an AI model, so it must be done explicitely
 	gc.collect()
 
 	if not blurredPic:
-		raise HTTPException(status_code=400, detail="Invalid picture to process")
+		raise HTTPException(status_code=400, detail=(blurInfo if blurInfo else "Invalid picture to process"))
 
 	headers = { "x-sgblur": json.dumps(blurInfo)}
 	return Response(content=blurredPic, media_type="image/jpeg", headers=headers)

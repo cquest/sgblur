@@ -52,7 +52,7 @@ def blurPicture(picture, keep, debug):
     global start
     start = time.time()
     timing('start')
-
+    DEBUG = (debug != '0')
     # copy received JPEG picture to temporary file
     tmp = '/dev/shm/blur%s.jpg' % pid
     tmpcrop = '/dev/shm/crop%s.jpg' % pid
