@@ -130,10 +130,12 @@ def detector(picture, cls=''):
 
         timing('detect XL')
         # detect again at higher resolution for smaller objects
+        off = 0
         for i in src:
             results = model_detect(model, i, imgsz=min(int(width) >> 5 << 5,3840), gb=6)
             result.append(results[0])
-            offset.append(0)
+            offset.append(off)
+            off += split
         timing('detect XL end')
 
     # prepare MCU crop rect list
