@@ -82,7 +82,7 @@ def detector(picture, cls=''):
     Returns
     -------
     Bytes
-        the blurred image
+        detection result as json
     """
 
     global start
