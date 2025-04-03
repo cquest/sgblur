@@ -1,5 +1,6 @@
 import os, subprocess
 from datetime import datetime
+import logging
 
 import turbojpeg
 from PIL import Image, ImageFilter, ImageOps, ImageDraw
@@ -22,7 +23,8 @@ JPEGTRAN_OPTS='-optimize -copy all'
 
 jpeg = turbojpeg.TurboJPEG()
 
-crop_save_dir = 'saved_crops'
+crop_save_dir = os.environ.get("CROP_SAVE_DIR") or  'saved_crops'
+tmp_dir = os.environ.get("TMP_DIR") or '/dev/shm'
 
 def copytags(src, dst, comment=None):
     tags = piexif.load(src)
@@ -73,8 +75,8 @@ def blurPicture(picture, keep, debug):
     timing('start')
     DEBUG = (debug != '0')
     # copy received JPEG picture to temporary file
-    tmp = '/dev/shm/blur%s.jpg' % pid
-    tmpcrop = '/dev/shm/crop%s.jpg' % pid
+    tmp = tmp_dir + '/blur%s.jpg' % pid
+    tmpcrop = tmp_dir + '/crop%s.jpg' % pid
 
     nb_blurred = 0
     nb_saved = 0
@@ -144,6 +146,7 @@ def blurPicture(picture, keep, debug):
             print('detect info:',info)
             print('detect bbox:',bbox)
     except:
+        logging.exception("Impossible to detect picture")
         return None,'detection failed'
 
     salt = None
@@ -337,7 +340,7 @@ def deblurPicture(picture, idx, salt):
     try:
         pid = os.getpid()
         # copy received JPEG picture to temporary file
-        tmp = '/dev/shm/deblur%s.jpg' % pid
+        tmp = tmp_dir + '/deblur%s.jpg' % pid
 
         with open(tmp, 'w+b') as jpg:
             jpg.write(picture.file.read())
