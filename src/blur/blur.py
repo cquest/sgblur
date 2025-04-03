@@ -98,6 +98,9 @@ def blurPicture(picture, keep, debug):
         info = results['info']
         crop_rects = results['crop_rects']
         bbox = results['bbox'] if 'bbox' in results else None
+        if DEBUG:
+            print('detect info:',info)
+            print('detect bbox:',bbox)
     except:
         return None
 
@@ -149,7 +152,7 @@ def blurPicture(picture, keep, debug):
             img.paste(boxblur, (bbox[0]-xywh[0], bbox[1]-xywh[1]))
             if DEBUG:
                 draw = ImageDraw.Draw(img)
-                draw.rectangle(box, outline=(0, 255, 255))
+                draw.rectangle(box, outline=(255, 0, 255), width=3)
             img.save(tmpcrop, subsampling=jpeg_subsample)
             subprocess.run('djpeg %s | cjpeg -sample %s -optimize -dct float -baseline -outfile %s' % (tmpcrop, sample, tmpcrop+'_tmp'), shell=True)
             os.replace(tmpcrop+'_tmp', tmpcrop)
