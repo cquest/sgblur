@@ -29,7 +29,25 @@ def copytags(src, dst, comment=None):
     tags['thumbnail'] = None
     if comment:
         tags["Exif"][piexif.ExifIFD.UserComment] = piexif.helper.UserComment.dump(comment)
-    piexif.insert(piexif.dump(tags), dst)
+    try:
+        piexif.insert(piexif.dump(tags), dst)
+    except:
+        # when tag copy fails, only copy the minimum we need
+        exif_ifd = {
+            piexif.ExifIFD.DateTimeOriginal: tags['Exif'][piexif.ExifIFD.DateTimeOriginal],
+            piexif.ExifIFD.UserComment:piexif.helper.UserComment.dump(comment)
+        }
+        gps_ifd = {
+            piexif.GPSIFD.GPSVersionID: (2, 0, 0, 0),
+            piexif.GPSIFD.GPSLatitude: tags['GPS'][piexif.GPSIFD.GPSLatitude],
+            piexif.GPSIFD.GPSLatitudeRef: tags['GPS'][piexif.GPSIFD.GPSLatitudeRef],
+            piexif.GPSIFD.GPSLongitude: tags['GPS'][piexif.GPSIFD.GPSLongitude],
+            piexif.GPSIFD.GPSLongitudeRef: tags['GPS'][piexif.GPSIFD.GPSLongitudeRef],
+            piexif.GPSIFD.GPSDateStamp: (tags['GPS'][piexif.GPSIFD.GPSDateStamp]
+                if piexif.GPSIFD.GPSDateStamp in tags['GPS']
+                else tags['Exif'][piexif.ExifIFD.DateTimeOriginal]),
+        }
+        piexif.insert(piexif.dump({"Exif": exif_ifd, "GPS":gps_ifd, "thumbnail":None}), dst)
 
 def blurPicture(picture, keep, debug):
     """Blurs a single picture by detecting faces and licence plates.
@@ -230,7 +248,11 @@ def blurPicture(picture, keep, debug):
                         comment = json.dumps(info2, separators=(',', ':'))
                         if DEBUG:
                             print(dirname+cropname, comment)
-                        copytags(tmp, dirname+cropname, comment=comment)
+                        try:
+                            copytags(tmp, dirname+cropname, comment=comment)
+                        except:
+                            os.remove(dirname+cropname)
+                            print('copytags failed')
                     else:
                         # round ctime/mtime to midnight
                         daytime = int(time.time()) - int(time.time()) % 86400
