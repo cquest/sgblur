@@ -98,6 +98,8 @@ def detector(picture, cls=''):
 
     with open(tmp, 'w+b') as jpg:
         jpg.write(picture.file.read())
+        jpg.seek(0)
+        tags = exifread.process_file(jpg, details=False)
 
     # get picture details
     with open(tmp, 'rb') as jpg:
@@ -205,4 +207,4 @@ def detector(picture, cls=''):
 
     timing('detect finished')
     print('%s detections in %s Mpx in %ss' % (len(crop_rects), int(width*height/1000000), round(time.time()-start,1)))
-    return(json.dumps({'model': model_name, 'info': info, 'crop_rects': crop_rects}))
+    return {'model': model_name, 'info':info, 'crop_rects': crop_rects}

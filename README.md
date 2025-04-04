@@ -134,6 +134,7 @@ A **demo API** with a minimal web UI is running on https://panoramax.openstreetm
 
 - `CROP_SAVE_DIR` : directory where cropped pictures are saved (default: `/data/crops`)
 - `TMP_DIR` : directory where temporary files are saved (default: `/dev/shm`)
+- `DETECT_URL` : URL of the face/plate detection API (default: `http://localhost:8001`). If set to `""`, the detection will be done locally. It's not recommended to do so in production, but it can be useful for testing.
 
 ### API documentation
 

@@ -23,9 +23,6 @@ JPEGTRAN_OPTS='-optimize -copy all'
 
 jpeg = turbojpeg.TurboJPEG()
 
-crop_save_dir = os.environ.get("CROP_SAVE_DIR") or  'saved_crops'
-tmp_dir = os.environ.get("TMP_DIR") or '/dev/shm'
-
 def copytags(src, dst, comment=None):
     tags = piexif.load(src)
     tags['thumbnail'] = None
@@ -52,6 +49,24 @@ def copytags(src, dst, comment=None):
         }
         piexif.insert(piexif.dump({"Exif": exif_ifd, "GPS":gps_ifd, "thumbnail":None}), dst)
 
+crop_save_dir = os.environ.get("CROP_SAVE_DIR",  'saved_crops')
+tmp_dir = os.environ.get("TMP_DIR", '/dev/shm')
+detect_url = os.environ.get("DETECT_URL", 'http://localhost:8001')
+
+def detect(picture, keep):
+    params = {'cls': "sign"} if keep == '2' else {}
+    if detect_url != '':
+        # call the detection microservice
+        files = {'picture': open(picture,'rb')}
+        r = requests.post(f'{detect_url}/detect/', files=files, params=params)
+        r.raise_for_status()
+        return r.json()
+    else:
+        from src.detect import detect
+        # call directly the detection code
+        with open(picture, 'rb') as f:
+            return detect.detector(f, **params)
+    
 def blurPicture(picture, keep, debug):
     """Blurs a single picture by detecting faces and licence plates.
 
@@ -133,21 +148,13 @@ def blurPicture(picture, keep, debug):
     if DEBUG:
         timing('call detection')
     try:
-        files = {'picture': open(tmp,'rb')}
-        if keep == '2':
-            r = requests.post('http://localhost:8001/detect/?cls=sign', files=files)
-        else:
-            r = requests.post('http://localhost:8001/detect/', files=files)
-        results = json.loads(r.text)
-        info = results['info']
-        crop_rects = results['crop_rects']
-        bbox = results['bbox'] if 'bbox' in results else None
-        if DEBUG:
-            print('detect info:',info)
-            print('detect bbox:',bbox)
-    except:
-        logging.exception("Impossible to detect picture")
-        return None,'detection failed'
+        results = detect(tmp, keep)
+    except Exception as e:
+        logging.error(f"Impossible to detect picture, error = {e}")
+        return None, 'detection failed'
+    info = results['info']
+    crop_rects = results['crop_rects']
+    bbox = results.get('bbox')
 
     salt = None
 
