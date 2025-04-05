@@ -149,7 +149,7 @@ def blurPicture(picture, keep, debug):
             xywh = info[c]['xywh']
             box = (bbox[0]-xywh[0], bbox[1]-xywh[1],bbox[2]-xywh[0], bbox[3]-xywh[1])
 
-            if xywh[2] < 12 and xywh[3] < 12:
+            if bbox[2]-bbox[0] < 12 or bbox[3]-bbox[1] < 12:
                 if DEBUG:
                     print('too small, skip')
                 continue
