@@ -111,13 +111,13 @@ def detector(picture, cls=''):
     timing('detect S')
     results = model_detect(model, img, imgsz=1024, gb=1)
     result.append(results[0])
-    offset.append(0)
+    offset.append([0,0])
 
     # detect with standard resolution
     timing('detect L')
     results = model_detect(model, img, imgsz=2048, gb=2)
     result.append(results[0])
-    offset.append(0)
+    offset.append([0,0])
 
     if width>=5760:
         timing('split 360')
@@ -125,8 +125,8 @@ def detector(picture, cls=''):
         if width >= height * 2:
             # split image in left and right parts to save VRAM
             split = int(width/2)
-            src = [ img.crop((0,0,split-1,height)),
-                    img.crop((split,0,width,height)) ]
+            src = [ img.crop((0,height/4,split-1,height/2)),
+                    img.crop((split,height/4,width,height/2)) ]
 
         timing('detect XL')
         # detect again at higher resolution for smaller objects
@@ -134,7 +134,7 @@ def detector(picture, cls=''):
         for i in src:
             results = model_detect(model, i, imgsz=min(int(width) >> 5 << 5,3840), gb=6)
             result.append(results[0])
-            offset.append(off)
+            offset.append([off,height/4])
             off += split
         timing('detect XL end')
 
@@ -151,8 +151,8 @@ def detector(picture, cls=''):
             if cls !='' and not names[int(obj.cls)] in cls:
                 continue
             box = obj.xywh
-            box_l = int(offset[r] + box[0][0] - box[0][2] * 0.5) >> hblock << hblock
-            box_t = int(box[0][1] - box[0][3] * 0.5) >> vblock << vblock
+            box_l = int(offset[r][0] + box[0][0] - box[0][2] * 0.5) >> hblock << hblock
+            box_t = int(offset[r][1] + box[0][1] - box[0][3] * 0.5) >> vblock << vblock
             box_w = int(box[0][2]) + (2 << hblock) >> hblock << hblock
             if names[int(obj.cls)] == 'sign':
                 box_h = int(box[0][3] * 1.25 + (2 << vblock)) >> vblock << vblock
@@ -163,10 +163,10 @@ def detector(picture, cls=''):
                     max(0,box_t),
                     min(box_w, width-max(0,box_l)),
                     min(box_h, height-max(0,box_t))]
-            bbox = [int(offset[r] + obj.xyxy[0][0]),
-                    int(obj.xyxy[0][1]),
-                    int(offset[r] + obj.xyxy[0][2]),
-                    int(obj.xyxy[0][3])]
+            bbox = [int(offset[r][0] + obj.xyxy[0][0]),
+                    int(offset[r][1] + obj.xyxy[0][1]),
+                    int(offset[r][0] + obj.xyxy[0][2]),
+                    int(offset[r][1] + obj.xyxy[0][3])]
 
             # remove overlaping detections
             for c in range(len(crop_rects)):
