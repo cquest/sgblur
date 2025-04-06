@@ -32,10 +32,11 @@ def copytags(src, dst, comment=None):
     try:
         piexif.insert(piexif.dump(tags), dst)
     except:
+        print('>> copytags retry')
         # when tag copy fails, only copy the minimum we need
         exif_ifd = {
             piexif.ExifIFD.DateTimeOriginal: tags['Exif'][piexif.ExifIFD.DateTimeOriginal],
-            piexif.ExifIFD.UserComment:piexif.helper.UserComment.dump(comment)
+            piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(comment)
         }
         gps_ifd = {
             piexif.GPSIFD.GPSVersionID: (2, 0, 0, 0),
