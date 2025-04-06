@@ -81,6 +81,14 @@ def blurPicture(picture, keep, debug):
 
     with open(tmp, 'w+b') as jpg:
         jpg.write(picture.file.read())
+
+        # check for premature end of JPEG
+        jpg.seek(0, os.SEEK_END)
+        jpg.seek(-2, os.SEEK_CUR)
+        if jpg.read(2) != b'\xFF\xD9':
+            print('premature end of JPEG data')
+            return None,'premature end of JPEG data, missing 0xFFD9 at end of file'
+
         jpg.seek(0)
         try:
             tags = exifread.process_file(jpg, details=False)
