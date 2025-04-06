@@ -194,11 +194,20 @@ def blurPicture(picture, keep, debug):
                 print( 'after drop', os.path.getsize(tmp+'_tmp'))
             if p.returncode != 0 :
                 if DEBUG:
+                    print('sampling', sample)
                     print('crop %sx%s -> recrop %sx%s' % (img.width, img.height, crop_rects[c][2], crop_rects[c][3]))
                 subprocess.run('jpegtran -crop %sx%s+0+0 %s > %s' % (img.width, img.height, tmpcrop, tmpcrop+'_tmp'), shell=True)
                 p = subprocess.run('jpegtran %s -trim -drop +%s+%s %s %s > %s' % (JPEGTRAN_OPTS, crop_rects[c][0], crop_rects[c][1], tmpcrop+'_tmp', tmp, tmp+'_tmp'), shell=True)
-                #if img.height != crop_rects[c][3]:
-                #    input()
+                if p.returncode != 0 :
+                    print('recompress original')
+                    subprocess.run('djpeg %s | cjpeg -sample %s -quality 80 -optimize -dct float -baseline -outfile %s' % (tmp, sample, tmp+'_tmp'), shell=True)
+                    copytags(tmp, tmp+'_tmp')
+                    os.replace(tmp+'_tmp', tmp)
+                    p = subprocess.run('jpegtran %s -trim -drop +%s+%s %s %s > %s' % (JPEGTRAN_OPTS, crop_rects[c][0], crop_rects[c][1], tmpcrop+'_tmp', tmp, tmp+'_tmp'), shell=True)
+                    if p.returncode != 0 :
+                        print('jpegtran -crop %sx%s+0+0 %s > %s' % (img.width, img.height, tmpcrop, tmpcrop+'_tmp'))
+                        print('jpegtran %s -trim -drop +%s+%s %s %s > %s' % (JPEGTRAN_OPTS, crop_rects[c][0], crop_rects[c][1], tmpcrop+'_tmp', tmp, tmp+'_tmp'))
+                        return None,'sampling'
 
             if p.returncode != 0 :
                 if DEBUG:
