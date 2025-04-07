@@ -17,6 +17,7 @@ TIMING=False
 
 jpeg = turbojpeg.TurboJPEG()
 
+<<<<<<< HEAD
 vram_avail, vram_total = torch.cuda.mem_get_info()
 if vram_avail < 6*(2**30):
     model = YOLO("./models/yolov8s_panoramax.pt")
@@ -25,6 +26,10 @@ if vram_avail < 6*(2**30):
 else:
     model = YOLO("./models/yolo11m_panoramax.pt")
     model_name = 'yolo11m'
+=======
+model = YOLO("./models/yolov8s_panoramax.pt")
+model_version = "0.1.0"
+>>>>>>> 35264b1 (Change detections to semantic tags)
 names = ['sign','plate','face']
 
 
@@ -207,4 +212,4 @@ def detector(picture, cls=''):
 
     timing('detect finished')
     print('%s detections in %s Mpx in %ss' % (len(crop_rects), int(width*height/1000000), round(time.time()-start,1)))
-    return {'model': model_name, 'info':info, 'crop_rects': crop_rects}
+    return {'model': model_name, 'info':info, 'crop_rects': crop_rects, "model_version": model_version}
