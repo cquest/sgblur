@@ -54,7 +54,7 @@ source ./env/bin/activate
 Install python dependencies for the API:
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ## Usage

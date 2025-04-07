@@ -28,19 +28,14 @@ def get_config():
 		}}},
 	response_class=Response
 )
-<<<<<<< HEAD
-async def blur_picture(picture: UploadFile, debug: str|None='0' , keep: str|None='0'):
-	blurredPic, blurInfo = blur.blurPicture(picture, keep, debug)
-=======
-async def blur_picture(picture: UploadFile, config: Annotated[Config, Depends(get_config)], keep: str | None = '0', accept: Optional[str] = Header("image/png")): 
+async def blur_picture(picture: UploadFile, config: Annotated[Config, Depends(get_config)], debug: str|None='0', keep: str | None = '0', accept: Optional[str] = Header("image/png")): 
 	"""Blur a picture.
 	The picture must be a JPEG file.
 
 	If the `accept` header is set to `multipart/form-data`, the returned picture will be a multipart/form-data, containing the blurred picture and some semantic tags detailling what has been detected in the picture.
 	Otherwise, the returned picture will be a JPEG file and the detection are send in the `x-sgblur` header.
 	"""
-	blurredPic, blurInfo = blur.blurPicture(picture, keep, config=config)
->>>>>>> 35264b1 (Change detections to semantic tags)
+	blurredPic, blurInfo = blur.blurPicture(picture, keep, debug, config=config)
 
 	# For some reason garbage collection does not run automatically after
 	# a call to an AI model, so it must be done explicitely

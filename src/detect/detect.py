@@ -17,19 +17,16 @@ TIMING=False
 
 jpeg = turbojpeg.TurboJPEG()
 
-<<<<<<< HEAD
 vram_avail, vram_total = torch.cuda.mem_get_info()
 if vram_avail < 6*(2**30):
     model = YOLO("./models/yolov8s_panoramax.pt")
     print("loading YOLO8s base model")
     model_name = 'yolo8s'
+    model_version = "0.1.0"
 else:
     model = YOLO("./models/yolo11m_panoramax.pt")
     model_name = 'yolo11m'
-=======
-model = YOLO("./models/yolov8s_panoramax.pt")
-model_version = "0.1.0"
->>>>>>> 35264b1 (Change detections to semantic tags)
+    model_version = "0.1.0"
 names = ['sign','plate','face']
 
 
