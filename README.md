@@ -2,9 +2,11 @@
 
 This repository only contains __the blurring algorithms and API__.
 
-It is based on YOLOv8 for object detection (faces and license plates) using a custom trained model.
+It is based on YOLOv11 for object detection (faces and license plates) using a custom trained model.
 
 Blurring is done on original JPEG pictures by manipulating low-level MCU in the JPEG raw data, to keep all other parts of the original image unchanged (no decompression/recompression). This also saves CPU usage.
+
+The blurring service calls a detection service through local HTTP calls.
 
 
 ## Install
@@ -52,19 +54,21 @@ source ./env/bin/activate
 Install python dependencies for the API:
 
 ```bash
-pip install -r requirements-api.txt
+pip install -r requirements.txt
 ```
-
-
 
 ## Usage
 
 ### Web API
 
-The Web API can be launched with the following command:
+The Web API can be launched with the following commands:
 
 ```bash
-uvicorn src.api:app --reload
+# detection service on port 8001 (1 worker to save GPU VRAM)
+uvicorn src.detect.detect_api:app --port 8001
+
+# blurring service (several workers using CPU for the blurring)
+uvicorn src.blur.blur_api:app --workers 8 
 ```
 
 It is then accessible on [localhost:8000](http://127.0.0.1:8000).
@@ -79,22 +83,22 @@ curl -X 'POST' \
   --output blurred.jpg
 ```
 
-Exemple using httpie :
+Example using httpie :
 
 ```bash
 http --form POST http://127.0.0.1:8000/blur/ picture@original.jpg --download --output blurred.jpg
 ```
 
-A **demo API** is running on https://api.cquest.org/blur/
+A **demo API** with a minimal web UI is running on https://panoramax.openstreetmap.org/blur/
+
+**DO NOT USE** it in production without prior authorization. Thanks.
 
 
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-You might want to read more [about available blur algorithms](./ALGORITHMS.md).
-
 
 ## License
 
-Copyright (c) GeoVisio/panoramax team 2022-2023, [released under MIT license](./LICENSE).
+Copyright (c) Panoramax team 2022-2024, [released under MIT license](./LICENSE).
