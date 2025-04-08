@@ -5,27 +5,28 @@ from fastapi.testclient import TestClient
 import tempfile
 from PIL import Image
 from multipart import MultipartParser, parse_options_header
+import pytest
 
 
 from src.blur.blur_api import app, get_config
 from src.blur.config import Config
 from .conftest import FIXTURE_DIR
 
-client = TestClient(app)
-
 MOCK_DETECT_URI = "https://detect.panoramax.com"
 
+client = TestClient(app)
 
-def get_overrided_config():
+
+def get_overrided_config_split():
     tmp = tempfile.mkdtemp(prefix="test_sgblur")
     os.mkdir(f"{tmp}/crops")
     os.mkdir(f"{tmp}/tmp")
     return Config(crop_save_dir=f"{tmp}/crops", tmp_dir=f"{tmp}/tmp", detect_url=MOCK_DETECT_URI)
 
 
-app.dependency_overrides[get_config] = get_overrided_config
-
-client = TestClient(app)
+@pytest.fixture(autouse=True, scope="module")
+def override_config():
+    app.dependency_overrides[get_config] = get_overrided_config_split
 
 
 MOCK_DETECTION = {

@@ -4,6 +4,7 @@ import os
 from fastapi.testclient import TestClient
 import tempfile
 from PIL import Image
+import pytest
 
 from src.blur.blur_api import app, get_config
 from src.blur.config import Config
@@ -19,9 +20,9 @@ def get_overrided_config():
     return Config(crop_save_dir=f"{tmp}/crops", tmp_dir=f"{tmp}/tmp", detect_url="")
 
 
-app.dependency_overrides[get_config] = get_overrided_config
-
-client = TestClient(app)
+@pytest.fixture(autouse=True, scope="module")
+def override_config():
+    app.dependency_overrides[get_config] = get_overrided_config
 
 
 def test_blur_endpoint():
