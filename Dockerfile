@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 WORKDIR /opt/blur
 
@@ -26,17 +26,21 @@ RUN apt-get -qq update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
     exiftran \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ./requirements.txt ./
-RUN pip install -r ./requirements.txt
+COPY ./pyproject.toml ./
+RUN pip install -e .
 
 # Source files
 COPY ./src ./src
 COPY ./scripts ./scripts
 COPY ./models ./models
 COPY ./demo.html ./
-COPY ./docker/docker-entrypoint.sh ./
-RUN chmod +x ./docker-entrypoint.sh
+
+ENV CROP_SAVE_DIR=/data/crops
+ENV TMP_DIR=/dev/shm
+
+RUN mkdir -p $CROP_SAVE_DIR $TMP_DIR
 
 # Expose service
-EXPOSE 8001
-ENTRYPOINT ["./docker-entrypoint.sh"]
+EXPOSE 8000
+ 
+ENTRYPOINT ["uvicorn", "src.blur.blur_api:app", "--host", "0.0.0.0", "--port", "8000"]

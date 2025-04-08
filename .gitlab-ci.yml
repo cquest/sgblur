@@ -12,7 +12,10 @@ before_script:
   - source venv/bin/activate
 
 test:
-  image: python:3.12
+  # we use the docker image to have all the dependencies installed
+  image: 
+      name: registry.gitlab.com/panoramax/server/sgblur
+      entrypoint: [""]
   script:
     - pip install --editable ".[dev]"
     - pytest -vv
