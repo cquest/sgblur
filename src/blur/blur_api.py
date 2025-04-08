@@ -33,6 +33,10 @@ async def blur_picture(picture: UploadFile, config: Annotated[Config, Depends(ge
 	The picture must be a JPEG file.
 
 	If the `accept` header is set to `multipart/form-data`, the returned picture will be a multipart/form-data, containing the blurred picture and some semantic tags detailling what has been detected in the picture.
+	The multipart will contain the following parts:
+	- `image`: the blurred picture
+	- `detections`: the Panoramax semantic tags detailling what has been detected in the picture
+
 	Otherwise, the returned picture will be a JPEG file and the detection are send in the `x-sgblur` header.
 	"""
 	blurredPic, blurInfo = blur.blurPicture(picture, keep, debug, config=config)
@@ -55,7 +59,6 @@ async def blur_picture(picture: UploadFile, config: Annotated[Config, Depends(ge
 
 	headers = { "x-sgblur": json.dumps(blurInfo)}
 	return Response(content=blurredPic, media_type="image/jpeg", headers=headers)
-
 
 @app.get(
 	"/blur/",
