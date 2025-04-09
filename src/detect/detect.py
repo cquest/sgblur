@@ -52,13 +52,13 @@ def vram_free():
     torch.cuda.empty_cache()
     gc.collect()
 
-def model_detect(model, img, imgsz=1024, gb=1):
+def model_detect(model, img, imgsz=1024, vram_need=1):
     results = None
     while not results:
         torch.cuda.empty_cache()
         vram_avail, vram_total = torch.cuda.mem_get_info()
-        while vram_avail >> 30 < gb:
-            print('wait for vram', gb, vram_avail >> 30)
+        while vram_avail >> 30 < vram_need:
+            print('wait for vram', vram_need, vram_avail >> 30)
             torch.cuda.empty_cache()
             time.sleep((time.time() % 1/5)) # random wait 0-0.2s
             vram_avail, vram_total = torch.cuda.mem_get_info()
@@ -109,13 +109,13 @@ def detector(picture, cls=''):
     src = [img]
 
     timing('detect S')
-    results = model_detect(model, img, imgsz=1024, gb=1)
+    results = model_detect(model, img, imgsz=1024, vram_need=1)
     result.append(results[0])
     offset.append([0,0])
 
     # detect with standard resolution
     timing('detect L')
-    results = model_detect(model, img, imgsz=2048, gb=2)
+    results = model_detect(model, img, imgsz=2048, vram_need=2)
     result.append(results[0])
     offset.append([0,0])
 
@@ -135,7 +135,7 @@ def detector(picture, cls=''):
         # detect again at higher resolution for smaller objects
         off = 0
         for i in src:
-            results = model_detect(model, i, imgsz=min(int(width) >> 5 << 5,4096), gb=6)
+            results = model_detect(model, i, imgsz=min(int(width) >> 5 << 5,4096), vram_need=3)
             result.append(results[0])
             offset.append([off,height_offset])
             off += split
