@@ -82,14 +82,16 @@ def blurPicture(picture, keep, debug):
     with open(tmp, 'w+b') as jpg:
         jpg.write(picture.file.read())
 
-        # check for premature end of JPEG (search 0xFFD9 in last 5% of file)
+        # check for premature end of JPEG
         jpg.seek(0, os.SEEK_END)
-        tail_size = int(jpg.tell()*0.05)
-        jpg.seek(-tail_size, os.SEEK_CUR)
-        tail = jpg.read(tail_size)
-        if b'\xFF\xD9' not in tail:
-            print('premature end of JPEG data')
-            return None,'premature end of JPEG data, missing 0xFFD9 at end of file'
+        jpg.seek(-2, os.SEEK_CUR)
+        if jpg.read(2) != b'\xFF\xD9':
+            try:
+                # call jpegoptim to cleanup the JPEG file (and lossless optimize it)
+                subprocess.run('jpegoptim --strip-none %s ' % tmp, shell=True)
+            except:
+                print('premature end of JPEG data')
+                return None,'premature end of JPEG data, missing 0xFFD9 at end of file'
 
         jpg.seek(0)
         try:
