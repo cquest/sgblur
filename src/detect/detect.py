@@ -204,4 +204,5 @@ def detector(picture, cls=''):
     vram_free()
 
     timing('detect finished')
+    print('%s detections in %s Mpx in %ss' % (len(crop_rects), int(width*height/1000000), round(time.time()-start,1)))
     return(json.dumps({'model': model_name, 'info': info, 'crop_rects': crop_rects}))
