@@ -85,19 +85,28 @@ def blurPicture(picture, keep, debug):
         # check for premature end of JPEG
         jpg.seek(0, os.SEEK_END)
         jpg.seek(-2, os.SEEK_CUR)
-        if jpg.read(2) != b'\xFF\xD9':
-            try:
-                # call jpegoptim to cleanup the JPEG file (and lossless optimize it)
-                subprocess.run('jpegoptim --strip-none %s ' % tmp, shell=True)
-            except:
-                print('premature end of JPEG data')
-                return None,'premature end of JPEG data, missing 0xFFD9 at end of file'
-
+        trailer = jpg.read(2)
         jpg.seek(0)
         try:
             tags = exifread.process_file(jpg, details=False)
         except:
-            tags = None
+            return None,"Can't read EXIF tags (exifread failed)"
+
+    if trailer != b'\xFF\xD9':
+        try:
+            # call jpegoptim to cleanup the JPEG file (and lossless optimize it)
+            subprocess.run('jpegoptim --strip-none %s ' % tmp, shell=True)
+        except:
+            print('premature end of JPEG data')
+            return None,'premature end of JPEG data, missing 0xFFD9 at end of file'
+
+    with open(tmp, 'rb') as jpg:
+        jpg.seek(0, os.SEEK_END)
+        jpg.seek(-2, os.SEEK_CUR)
+        if jpg.read(2) != b'\xFF\xD9':
+                print('premature end of JPEG data after jpegoptim')
+                return None,'premature end of JPEG data, missing 0xFFD9 at end of file'
+
     if DEBUG:
         print("keep", keep, "original", os.path.getsize(tmp))
 
