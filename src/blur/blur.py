@@ -109,10 +109,12 @@ def blurPicture(picture, keep, debug):
             os.replace(tmp+'_tmp', tmp)
 
     # get picture details
-    with open(tmp, 'rb') as jpg:
-        width, height, jpeg_subsample, jpeg_colorspace = jpeg.decode_header(
-            jpg.read())
-
+    try:
+        with open(tmp, 'rb') as jpg:
+            width, height, jpeg_subsample, jpeg_colorspace = jpeg.decode_header(
+                jpg.read())
+    except:
+        return None,"Can't decode JPEG header, corrupted file ?"
 
     # call the detection microservice
     if DEBUG:
