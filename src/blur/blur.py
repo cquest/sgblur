@@ -209,9 +209,7 @@ def blurPicture(picture, keep, debug):
                     os.replace(tmp+'_tmp', tmp)
                     p = subprocess.run('jpegtran %s -trim -drop +%s+%s %s %s > %s' % (JPEGTRAN_OPTS, crop_rects[c][0], crop_rects[c][1], tmpcrop+'_tmp', tmp, tmp+'_tmp'), shell=True)
                     if p.returncode != 0 :
-                        print('jpegtran -crop %sx%s+0+0 %s > %s' % (img.width, img.height, tmpcrop, tmpcrop+'_tmp'))
-                        print('jpegtran %s -trim -drop +%s+%s %s %s > %s' % (JPEGTRAN_OPTS, crop_rects[c][0], crop_rects[c][1], tmpcrop+'_tmp', tmp, tmp+'_tmp'))
-                        return None,'sampling'
+                        return None,'JPEG recompression failed'
 
             if p.returncode != 0 :
                 if DEBUG:
