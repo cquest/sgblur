@@ -303,7 +303,7 @@ def blurPicture(picture, keep, debug):
 
     timing('end')
     # summary output
-    print('%s Mpx picture, %s blur, %s saved in %ss' % (round(width/height/1000000.0,1), nb_blurred, nb_saved, round(time.time()-start,3)))
+    print('%s Mpx picture, %s blur, %s saved in %ss' % (round(width*height/1000000.0,1), nb_blurred, nb_saved, round(time.time()-start,3)))
     return original, info
 
 
