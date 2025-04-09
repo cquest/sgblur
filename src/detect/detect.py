@@ -125,8 +125,11 @@ def detector(picture, cls=''):
         if width >= height * 2:
             # split image in left and right parts to save VRAM
             split = int(width/2)
-            src = [ img.crop((0,height/4,split-1,height*3/4)),
-                    img.crop((split,height/4,width,height*3/4)) ]
+            height_offset = height/4
+            src = [ img.crop((0,height_offset,split-1,height*3/4)),
+                    img.crop((split,height_offset,width,height*3/4)) ]
+        else:
+            height_offset = 0
 
         timing('detect XL')
         # detect again at higher resolution for smaller objects
@@ -134,7 +137,7 @@ def detector(picture, cls=''):
         for i in src:
             results = model_detect(model, i, imgsz=min(int(width) >> 5 << 5,3840), gb=6)
             result.append(results[0])
-            offset.append([off,height/4])
+            offset.append([off,height_offset])
             off += split
         timing('detect XL end')
 
