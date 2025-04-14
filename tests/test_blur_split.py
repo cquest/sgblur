@@ -32,15 +32,16 @@ def override_config():
 MOCK_DETECTION = {
     "info": [{"class": "sign", "confidence": 0.313, "xywh": [144, 96, 64, 64]}],
     "crop_rects": [[144, 96, 64, 64]],
+    "model": {"name": "yolo11n", "version": "0.1.0"},
 }
 
 PANORAMAX_DETECTIONS_SEMANTICS = [
     {
         "shape": [144, 96, 64, 64],
         "semantics": [
-            {"key": "osm:traffic_sign", "value": "yes"},
-            {"key": "osm:traffic_sign:model", "value": "yolo11n"},
-            {"key": "osm:traffic_sign:confidence", "value": 0.313},
+            {"key": "osm|traffic_sign", "value": "yes"},
+            {"key": "detection_model[osm|traffic_sign=yes]", "value": "SGBlur-yolo11n/0.1.0"},
+            {"key": "detection_confidence[osm|traffic_sign=yes]", "value": 0.313},
         ],
     }
 ]

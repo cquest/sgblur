@@ -244,4 +244,4 @@ def detector(picture, cls=''):
 
     timing('detect finished')
     print('%s detections in %s Mpx in %ss' % (len(crop_rects), int(width*height/1000000), round(time.time()-start,1)))
-    return {'model': model_config.name, 'info':info, 'crop_rects': crop_rects, "model_version": model_config.version}
+    return {'info':info, 'crop_rects': crop_rects, 'model': {"name": model_config.name, "version": model_config.version}}
