@@ -150,10 +150,7 @@ def blurPicture(picture, keep, debug, config: Config = Config()):
         logging.error(f"Impossible to detect picture, error = {e}")
         return None, 'detection failed'
     info = results['info']
-    crop_rects = results['crop_rects']
-    bbox = results.get('bbox')
-
-    salt = None
+    crop_rects = results.pop('crop_rects')
 
     # get MCU maximum size (2^n) = 8 or 16 pixels subsamplings
     hblock, vblock, sample = [(3, 3 ,'1x1'), (4, 3, '2x1'), (4, 4, '2x2'), (4, 4, '2x2'), (3, 4, '1x2')][jpeg_subsample]
@@ -295,7 +292,7 @@ def blurPicture(picture, keep, debug, config: Config = Config()):
                         # round ctime/mtime to midnight
                         daytime = int(time.time()) - int(time.time()) % 86400
                         os.utime(dirname+cropname, (daytime, daytime))
-            info = { 'info': info, 'salt': salt }
+            results['salt'] = salt 
 
         if False:
             # regenerate EXIF thumbnail
@@ -320,7 +317,7 @@ def blurPicture(picture, keep, debug, config: Config = Config()):
     timing('end')
     # summary output
     print('%s Mpx picture, %s blur, %s saved in %ss' % (round(width*height/1000000.0,1), nb_blurred, nb_saved, round(time.time()-start,3)))
-    return original, info
+    return original, results
 
 
 def deblurPicture(picture, idx, salt, config):

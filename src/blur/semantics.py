@@ -7,7 +7,7 @@ def t(key, value):
 def detection_to_tags(detection, config: Config):
     """Change the detections to Panoramax semantic tags"""
     res = []
-    model_full_name = f"{config.model_name}-{detection['model']['name']}/{detection['model']['version']}"
+    model_full_name = f"{config.api_name}-{detection['model']['name']}/{detection['model']['version']}"
     for info in detection["info"]:
         sem = []
         if info["class"] == "sign":
