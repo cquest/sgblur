@@ -1,10 +1,9 @@
-from fastapi import FastAPI, UploadFile, Response, HTTPException
+from fastapi import FastAPI, UploadFile, HTTPException
 import gc
 from . import detect
 
 app = FastAPI()
 print("API is preparing to start...")
-
 
 @app.get("/")
 async def root():

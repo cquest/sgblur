@@ -6,6 +6,9 @@ import tempfile
 from PIL import Image
 import pytest
 
+# we force the use of a nano model in tests
+os.environ["MODEL_NAME"] = "yolo11n"
+
 from src.blur.blur_api import app, get_config
 from src.blur.config import Config
 from .conftest import FIXTURE_DIR
@@ -32,7 +35,7 @@ def test_blur_endpoint():
 
 
 def test_blur_picture():
-    pic = FIXTURE_DIR / "flat_urban_with_face_and_sign.jpg"
+    pic = FIXTURE_DIR / "flat_urban_with_face_and_sign_small.jpg"
     response = client.post("/blur/", files={"picture": open(pic, "rb")})
     assert response.status_code == 200
 

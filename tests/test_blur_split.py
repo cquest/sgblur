@@ -39,7 +39,7 @@ PANORAMAX_DETECTIONS_SEMANTICS = [
         "shape": [144, 96, 64, 64],
         "semantics": [
             {"key": "osm:traffic_sign", "value": "yes"},
-            {"key": "osm:traffic_sign:model", "value": "Speedy Gonzales"},
+            {"key": "osm:traffic_sign:model", "value": "yolo11n"},
             {"key": "osm:traffic_sign:confidence", "value": 0.313},
         ],
     }

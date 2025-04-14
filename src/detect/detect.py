@@ -3,11 +3,13 @@ import os
 if 'SGBLUR_DEVICES' in os.environ:
     os.environ['CUDA_VISIBLE_DEVICES'] = str(os.getpid() % int(os.environ['SGBLUR_DEVICES']))
 
+from pydantic import BaseModel
 from ultralytics import YOLO
 import turbojpeg
 import json, time, gc
 from PIL import Image
 import torch
+import exifread
 
 MIN_CONF=0.15
 VERBOSE=False
@@ -17,16 +19,49 @@ TIMING=False
 
 jpeg = turbojpeg.TurboJPEG()
 
-vram_avail, vram_total = torch.cuda.mem_get_info()
-if vram_avail < 6*(2**30):
-    model = YOLO("./models/yolov8s_panoramax.pt")
-    print("loading YOLO8s base model")
-    model_name = 'yolo8s'
-    model_version = "0.1.0"
+try:
+    torch.cuda.mem_get_info()
+    has_nvidia_driver = True
+except RuntimeError:
+    has_nvidia_driver = False
+
+def empty_gpu_cache():
+    if has_nvidia_driver:
+        torch.cuda.empty_cache()
+
+def get_gpu_memory():
+    if has_nvidia_driver:
+        return torch.cuda.mem_get_info()
+    return None, None
+
+class Model(BaseModel):
+    name: str
+    version: str
+    path: str
+
+MODELS = [
+    Model(name="yolo8s", path="./models/yolov8s_panoramax.pt", version="0.1.0"),
+    Model(name="yolo11m", path="./models/yolo11m_panoramax.pt", version="0.1.0"),
+    Model(name="yolo11n", path="./models/yolo11n_panoramax.pt", version="0.1.0"),
+]
+
+if "MODEL_NAME" in os.environ:
+    model_name = os.environ["MODEL_NAME"]
 else:
-    model = YOLO("./models/yolo11m_panoramax.pt")
-    model_name = 'yolo11m'
-    model_version = "0.1.0"
+    # auto detect the right model
+    vram_avail, vram_total = get_gpu_memory()
+    if vram_avail < 6*(2**30):
+        model_name = "yolov8s"
+    else:
+        model_name = "yolo11m"
+
+model_config = next((m for m in MODELS if m.name == model_name), None)
+if not model_config:
+    raise Exception(f"Model '{model_name}' is not supported (valid models are {', '.join(m.name for m in MODELS)})")
+
+model = YOLO(model_config.path)
+print(f"loading {model_config.name} model")
+
 names = ['sign','plate','face']
 
 
@@ -51,19 +86,19 @@ def timing(msg=''):
         print('detect:', round(time.time()-start,3), msg)
 
 def vram_free():
-    torch.cuda.empty_cache()
+    empty_gpu_cache()
     gc.collect()
 
 def model_detect(model, img, imgsz=1024, vram_need=1):
     results = None
     while not results:
-        torch.cuda.empty_cache()
-        vram_avail, vram_total = torch.cuda.mem_get_info()
-        while vram_avail >> 30 < vram_need:
+        empty_gpu_cache()
+        vram_avail, vram_total = get_gpu_memory()
+        while vram_avail and vram_avail >> 30 < vram_need:
             print('wait for vram', vram_need, vram_avail >> 30)
-            torch.cuda.empty_cache()
+            empty_gpu_cache()
             time.sleep((time.time() % 1/5)) # random wait 0-0.2s
-            vram_avail, vram_total = torch.cuda.mem_get_info()
+            vram_avail, vram_total = get_gpu_memory()
 
         try:
             results = model.predict(img, conf=MIN_CONF, imgsz=imgsz, half=HALF, verbose=VERBOSE)
@@ -99,7 +134,7 @@ def detector(picture, cls=''):
     offset = []
 
     with open(tmp, 'w+b') as jpg:
-        jpg.write(picture.file.read())
+        jpg.write(picture.read())
         jpg.seek(0)
         tags = exifread.process_file(jpg, details=False)
 
@@ -209,4 +244,4 @@ def detector(picture, cls=''):
 
     timing('detect finished')
     print('%s detections in %s Mpx in %ss' % (len(crop_rects), int(width*height/1000000), round(time.time()-start,1)))
-    return {'model': model_name, 'info':info, 'crop_rects': crop_rects, "model_version": model_version}
+    return {'model': model_config.name, 'info':info, 'crop_rects': crop_rects, "model_version": model_config.version}
