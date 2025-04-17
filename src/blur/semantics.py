@@ -16,7 +16,7 @@ def detection_to_tags(detection, config: Config):
         if info["class"] == "sign":
             sem.append(t("osm|traffic_sign", "yes"))
             sem.append(t("detection_model[osm|traffic_sign=yes]", model_full_name))
-            sem.append(t("detection_confidence[osm|traffic_sign=yes]", info["confidence"]))
+            sem.append(t("detection_confidence[osm|traffic_sign=yes]", str(info["confidence"])))
         else:
             continue
 

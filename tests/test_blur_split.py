@@ -42,7 +42,7 @@ PANORAMAX_DETECTIONS_SEMANTICS = {
             "semantics": [
                 {"key": "osm|traffic_sign", "value": "yes"},
                 {"key": "detection_model[osm|traffic_sign=yes]", "value": "SGBlur-yolo11n/0.1.0"},
-                {"key": "detection_confidence[osm|traffic_sign=yes]", "value": 0.313},
+                {"key": "detection_confidence[osm|traffic_sign=yes]", "value": "0.313"},
             ],
         }
     ]
