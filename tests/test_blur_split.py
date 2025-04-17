@@ -45,7 +45,8 @@ PANORAMAX_DETECTIONS_SEMANTICS = {
                 {"key": "detection_confidence[osm|traffic_sign=yes]", "value": "0.313"},
             ],
         }
-    ]
+    ],
+    "service_name": "SGBlur",
 }
 
 
@@ -84,12 +85,13 @@ def test_blur_picture_multipart(requests_mock):
     assert content_type == "multipart/form-data"
     multipart_response = multipart.MultipartParser(io.BytesIO(response.content), boundary=boundary["boundary"])
 
-    detections = multipart_response.get("detections")
+    metadata = multipart_response.get("metadata")
     pic = multipart_response.get("image")
 
-    detections = json.loads(detections.raw)
-    assert detections["annotations"] == PANORAMAX_DETECTIONS_SEMANTICS["annotations"]
-    assert detections.get("blurring_id")  # we should also have a blurring id in the response
+    metadata = json.loads(metadata.raw)
+    assert metadata["annotations"] == PANORAMAX_DETECTIONS_SEMANTICS["annotations"]
+    assert metadata.get("blurring_id")  # we should also have a blurring id in the response
+    assert metadata["service_name"] == "SGBlur"
 
     # and the returned picture is a valid JPEG
     p = Image.open(io.BytesIO(pic.raw), formats=["jpeg"])

@@ -5,12 +5,18 @@ def t(key, value):
     return {"key": key, "value": value}
 
 def detection_to_tags(detection, config: Config):
-    """Change the detections to Panoramax semantic tags"""
-    res = {'annotations': []}
-    salt = detection.get('salt')
+    """Change the detections to Panoramax semantic tags
+    
+    Returns a dict with the following fields:
+	   * `annotations`: a list of panoramax annotations with semantic tags
+	   * `blurring_id`: a optional unique identifier for the blurring. This could be used with `keep=1` to unblur a picture
+	   * `service_name`: the name of the service that generated the metadata. This is important to be able to update the semantics tags associated to the picture if the blurring model is updated.
+    """
+    res = {"annotations": [], "service_name": config.api_name}
+    salt = detection.get("salt")
     if salt:
-        res['blurring_id'] = salt
-    model_full_name = f"{config.api_name}-{detection['model']['name']}/{detection['model']['version']}"
+        res["blurring_id"] = salt
+    model_full_name = f"{config.api_name}-{detection["model"]["name"]}/{detection["model"]["version"]}"
     for info in detection["info"]:
         sem = []
         if info["class"] == "sign":
@@ -20,7 +26,7 @@ def detection_to_tags(detection, config: Config):
         else:
             continue
 
-        res['annotations'].append({
+        res["annotations"].append({
             "shape": info["xywh"],
             "semantics": sem
         })

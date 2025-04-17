@@ -35,7 +35,10 @@ async def blur_picture(picture: UploadFile, config: Annotated[Config, Depends(ge
 	If the `accept` header is set to `multipart/form-data`, the returned picture will be a multipart/form-data, containing the blurred picture and some semantic tags detailling what has been detected in the picture.
 	The multipart will contain the following parts:
 	- `image`: the blurred picture
-	- `detections`: the Panoramax semantic tags detailling what has been detected in the picture
+	- `metadata`: A json containing the following fields:
+	   * `annotations`: a list of panoramax annotations with semantic tags
+	   * `blurring_id`: a optional unique identifier for the blurring. This could be used with `keep=1` to unblur a picture
+	   * `service_name`: the name of the service that generated the metadata. This is important to be able to update the semantics tags associated to the picture if the blurring model is updated.
 
 	Otherwise, the returned picture will be a JPEG file and the detection are send in the `x-sgblur` header.
 	"""
@@ -51,7 +54,7 @@ async def blur_picture(picture: UploadFile, config: Annotated[Config, Depends(ge
 	if "multipart/form-data" in accept:
 		detection_info = semantics.detection_to_tags(blurInfo, config)
 		content, content_type = urllib3.encode_multipart_formdata(fields={
-			'detections':("detections", json.dumps(detection_info), {"Content-Type": "application/json"}),
+			'metadata':("metadata", json.dumps(detection_info), {"Content-Type": "application/json"}),
 			'image': ('filename', blurredPic, 'image/jpeg'),
 		})
 
