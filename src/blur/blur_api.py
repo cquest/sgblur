@@ -57,7 +57,7 @@ async def blur_picture(picture: UploadFile, config: Annotated[Config, Depends(ge
 
 		return Response(content=content, media_type=content_type)
 
-	headers = { "x-sgblur": json.dumps(blurInfo)}
+	headers = {"x-sgblur": json.dumps(blurInfo)}
 	return Response(content=blurredPic, media_type="image/jpeg", headers=headers)
 
 @app.get(

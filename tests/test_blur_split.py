@@ -4,7 +4,7 @@ import os
 from fastapi.testclient import TestClient
 import tempfile
 from PIL import Image
-from multipart import MultipartParser, parse_options_header
+import multipart
 import pytest
 
 
@@ -35,16 +35,18 @@ MOCK_DETECTION = {
     "model": {"name": "yolo11n", "version": "0.1.0"},
 }
 
-PANORAMAX_DETECTIONS_SEMANTICS = [
-    {
-        "shape": [144, 96, 64, 64],
-        "semantics": [
-            {"key": "osm|traffic_sign", "value": "yes"},
-            {"key": "detection_model[osm|traffic_sign=yes]", "value": "SGBlur-yolo11n/0.1.0"},
-            {"key": "detection_confidence[osm|traffic_sign=yes]", "value": 0.313},
-        ],
-    }
-]
+PANORAMAX_DETECTIONS_SEMANTICS = {
+    "semantics": [
+        {
+            "shape": [144, 96, 64, 64],
+            "semantics": [
+                {"key": "osm|traffic_sign", "value": "yes"},
+                {"key": "detection_model[osm|traffic_sign=yes]", "value": "SGBlur-yolo11n/0.1.0"},
+                {"key": "detection_confidence[osm|traffic_sign=yes]", "value": 0.313},
+            ],
+        }
+    ]
+}
 
 
 def test_blur_picture(requests_mock):
@@ -78,14 +80,16 @@ def test_blur_picture_multipart(requests_mock):
     assert "multipart/form-data" in response.headers["content-type"]
     assert response.content
 
-    content_type, boundary = parse_options_header(response.headers["content-type"])
+    content_type, boundary = multipart.parse_options_header(response.headers["content-type"])
     assert content_type == "multipart/form-data"
-    multipart_response = MultipartParser(io.BytesIO(response.content), boundary=boundary["boundary"])
+    multipart_response = multipart.MultipartParser(io.BytesIO(response.content), boundary=boundary["boundary"])
 
     detections = multipart_response.get("detections")
     pic = multipart_response.get("image")
 
-    assert json.loads(detections.raw) == PANORAMAX_DETECTIONS_SEMANTICS
+    detections = json.loads(detections.raw)
+    assert detections["semantics"] == PANORAMAX_DETECTIONS_SEMANTICS["semantics"]
+    assert detections.get("blurring_id")  # we should also have a blurring id in the response
 
     # and the returned picture is a valid JPEG
     p = Image.open(io.BytesIO(pic.raw), formats=["jpeg"])
