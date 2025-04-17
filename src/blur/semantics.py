@@ -6,7 +6,7 @@ def t(key, value):
 
 def detection_to_tags(detection, config: Config):
     """Change the detections to Panoramax semantic tags"""
-    res = {'semantics': []}
+    res = {'annotations': []}
     salt = detection.get('salt')
     if salt:
         res['blurring_id'] = salt
@@ -20,7 +20,7 @@ def detection_to_tags(detection, config: Config):
         else:
             continue
 
-        res['semantics'].append({
+        res['annotations'].append({
             "shape": info["xywh"],
             "semantics": sem
         })

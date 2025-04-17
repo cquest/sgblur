@@ -36,7 +36,7 @@ MOCK_DETECTION = {
 }
 
 PANORAMAX_DETECTIONS_SEMANTICS = {
-    "semantics": [
+    "annotations": [
         {
             "shape": [144, 96, 64, 64],
             "semantics": [
@@ -88,7 +88,7 @@ def test_blur_picture_multipart(requests_mock):
     pic = multipart_response.get("image")
 
     detections = json.loads(detections.raw)
-    assert detections["semantics"] == PANORAMAX_DETECTIONS_SEMANTICS["semantics"]
+    assert detections["annotations"] == PANORAMAX_DETECTIONS_SEMANTICS["annotations"]
     assert detections.get("blurring_id")  # we should also have a blurring id in the response
 
     # and the returned picture is a valid JPEG
