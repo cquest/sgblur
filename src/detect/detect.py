@@ -60,7 +60,7 @@ if not model_config:
     raise Exception(f"Model '{model_name}' is not supported (valid models are {', '.join(m.name for m in MODELS)})")
 
 model = YOLO(model_config.path)
-print(f"loading {model_config.name} model")
+print(f"loading {model_config.name} model with MIN_CONF={MIN_CONF}")
 
 names = ['sign','plate','face']
 
