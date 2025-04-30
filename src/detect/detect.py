@@ -11,7 +11,7 @@ from PIL import Image
 import torch
 import exifread
 
-MIN_CONF=0.15
+MIN_CONF=0.30
 VERBOSE=False
 HALF=True
 
@@ -40,7 +40,7 @@ class Model(BaseModel):
     path: str
 
 MODELS = [
-    Model(name="yolo8s", path="./models/yolov8s_panoramax.pt", version="0.1.0"),
+    Model(name="yolo11s", path="./models/yolo11s_panoramax.pt", version="0.1.0"),
     Model(name="yolo11m", path="./models/yolo11m_panoramax.pt", version="0.1.0"),
     Model(name="yolo11n", path="./models/yolo11n_panoramax.pt", version="0.1.0"),
 ]
