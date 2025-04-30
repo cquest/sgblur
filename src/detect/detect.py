@@ -50,8 +50,10 @@ if "MODEL_NAME" in os.environ:
 else:
     # auto detect the right model
     vram_avail, vram_total = get_gpu_memory()
-    if vram_avail < 6*(2**30):
-        model_name = "yolov8s"
+    if not vram_total:
+        model_name = "yolo11n" # we're (testing) on CPU, use the "nano" model
+    elif vram_avail < 6*(2**30):
+        model_name = "yolo11s"
     else:
         model_name = "yolo11m"
 
