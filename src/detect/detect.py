@@ -121,7 +121,7 @@ def detector(picture, cls=''):
     Returns
     -------
     Bytes
-        detection result as json
+        detection result as dict
     """
 
     global start
