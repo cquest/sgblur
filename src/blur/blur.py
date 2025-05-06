@@ -1,6 +1,6 @@
 import os, subprocess
 from datetime import datetime
-
+import logging
 import turbojpeg
 from PIL import Image, ImageFilter, ImageOps, ImageDraw
 import hashlib, pathlib, time
@@ -20,9 +20,9 @@ def timing(msg=''):
 # JPEGTRAN_OPTS='-progressive -optimize -copy all'
 JPEGTRAN_OPTS='-optimize -copy all'
 
-jpeg = turbojpeg.TurboJPEG()
+from .config import Config
 
-crop_save_dir = 'saved_crops'
+jpeg = turbojpeg.TurboJPEG()
 
 def copytags(src, dst, comment=None):
     tags = piexif.load(src)
@@ -50,7 +50,21 @@ def copytags(src, dst, comment=None):
         }
         piexif.insert(piexif.dump({"Exif": exif_ifd, "GPS":gps_ifd, "thumbnail":None}), dst)
 
-def blurPicture(picture, keep, debug):
+def detect(picture, keep, config: Config):
+    params = {'cls': "sign"} if keep == '2' else {}
+    if config.detect_url != '':
+        # call the detection microservice
+        files = {'picture': open(picture,'rb')}
+        r = requests.post(f'{config.detect_url}/detect/', files=files, params=params)
+        r.raise_for_status()
+        return r.json()
+    else:
+        from src.detect import detect
+        # call directly the detection code
+        with open(picture, 'rb') as f:
+            return detect.detector(f, **params)
+    
+def blurPicture(picture, keep, debug, config: Config = Config()):
     """Blurs a single picture by detecting faces and licence plates.
 
     Parameters
@@ -73,8 +87,8 @@ def blurPicture(picture, keep, debug):
     timing('start')
     DEBUG = (debug != '0')
     # copy received JPEG picture to temporary file
-    tmp = '/dev/shm/blur%s.jpg' % pid
-    tmpcrop = '/dev/shm/crop%s.jpg' % pid
+    tmp = config.tmp_dir + '/blur%s.jpg' % pid
+    tmpcrop = config.tmp_dir + '/crop%s.jpg' % pid
 
     nb_blurred = 0
     nb_saved = 0
@@ -131,22 +145,12 @@ def blurPicture(picture, keep, debug):
     if DEBUG:
         timing('call detection')
     try:
-        files = {'picture': open(tmp,'rb')}
-        if keep == '2':
-            r = requests.post('http://localhost:8001/detect/?cls=sign', files=files)
-        else:
-            r = requests.post('http://localhost:8001/detect/', files=files)
-        results = json.loads(r.text)
-        info = results['info']
-        crop_rects = results['crop_rects']
-        bbox = results['bbox'] if 'bbox' in results else None
-        if DEBUG:
-            print('detect info:',info)
-            print('detect bbox:',bbox)
-    except:
-        return None,'detection failed'
-
-    salt = None
+        results = detect(tmp, keep, config)
+    except Exception as e:
+        logging.error(f"Impossible to detect picture, error = {e}")
+        return None, 'detection failed'
+    info = results['info']
+    crop_rects = results.pop('crop_rects')
 
     # get MCU maximum size (2^n) = 8 or 16 pixels subsamplings
     hblock, vblock, sample = [(3, 3 ,'1x1'), (4, 3, '2x1'), (4, 4, '2x2'), (4, 4, '2x2'), (3, 4, '1x2')][jpeg_subsample]
@@ -250,7 +254,7 @@ def blurPicture(picture, keep, debug):
             jpg.write(b'\xFF\xD9')
 
         # keep potential false positive and road signs original parts hashed
-        if crop_save_dir != '':
+        if config.crop_save_dir != '':
             salt = str(uuid.uuid4())
             for c in range(len(crops)):
                 if ((keep == '1' and info[c]['confidence'] < 0.5 and info[c]['class'] in ['face', 'plate'])
@@ -260,9 +264,9 @@ def blurPicture(picture, keep, debug):
                     h.update(((salt if not info[c]['class'] == 'sign' else str(info))+str(info[c])).encode())
                     cropname = h.hexdigest()+'.jpg'
                     if info[c]['class'] != 'sign':
-                        dirname = crop_save_dir+'/'+info[c]['class']+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
+                        dirname = config.crop_save_dir+'/'+info[c]['class']+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
                     else:
-                        dirname = crop_save_dir+'/'+info[c]['class']+'/'+today+'/'+str(round(info[c]['confidence'],1))+'/'
+                        dirname = config.crop_save_dir+'/'+info[c]['class']+'/'+today+'/'+str(round(info[c]['confidence'],1))+'/'
                     pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
                     with open(dirname+cropname, 'wb') as crop:
                         crop.write(crops[c])
@@ -288,7 +292,7 @@ def blurPicture(picture, keep, debug):
                         # round ctime/mtime to midnight
                         daytime = int(time.time()) - int(time.time()) % 86400
                         os.utime(dirname+cropname, (daytime, daytime))
-            info = { 'info': info, 'salt': salt }
+            results['salt'] = salt 
 
         if False:
             # regenerate EXIF thumbnail
@@ -313,10 +317,10 @@ def blurPicture(picture, keep, debug):
     timing('end')
     # summary output
     print('%s Mpx picture, %s blur, %s saved in %ss' % (round(width*height/1000000.0,1), nb_blurred, nb_saved, round(time.time()-start,3)))
-    return original, info
+    return original, results
 
 
-def deblurPicture(picture, idx, salt):
+def deblurPicture(picture, idx, salt, config):
     """Un-blur a part of a previously blurred picture by restoring the original saved part.
 
     Parameters
@@ -337,7 +341,7 @@ def deblurPicture(picture, idx, salt):
     try:
         pid = os.getpid()
         # copy received JPEG picture to temporary file
-        tmp = '/dev/shm/deblur%s.jpg' % pid
+        tmp = config.tmp_dir + '/deblur%s.jpg' % pid
 
         with open(tmp, 'w+b') as jpg:
             jpg.write(picture.file.read())
@@ -354,7 +358,7 @@ def deblurPicture(picture, idx, salt):
         h = hashlib.sha256()
         h.update((salt+str(i[idx])).encode())
         cropname = h.hexdigest()+'.jpg'
-        cropdir = crop_save_dir+'/'+i[idx]['class']+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
+        cropdir = config.crop_save_dir+'/'+i[idx]['class']+'/'+cropname[0:2]+'/'+cropname[0:4]+'/'
 
         # "drop" original picture part into provided picture
         crop_rect = i[idx]['xywh']
