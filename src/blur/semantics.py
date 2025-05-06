@@ -16,7 +16,7 @@ def detection_to_tags(detection, config: Config):
     salt = detection.get("salt")
     if salt:
         res["blurring_id"] = salt
-    model_full_name = f"{config.api_name}-{detection["model"]["name"]}/{detection["model"]["version"]}"
+    model_full_name = f'{config.api_name}-{detection["model"]["name"]}/{detection["model"]["version"]}'
     for info in detection["info"]:
         sem = []
         if info["class"] == "sign":
