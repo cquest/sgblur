@@ -70,7 +70,7 @@ The Web API can be launched with the following commands:
 
 ```bash
 # detection service on port 8001 (1 worker to save GPU VRAM)
-uvicorn src.detect.detect_api:app --reload --port 8001
+uvicorn src.detect.detect_api:app --port 8001
 ```
 
 The API is usally access through the blurring API, but can also be used directly on [localhost:8001](http://127.0.0.1:8001).
@@ -102,7 +102,7 @@ The blurring API can be launched with the following command:
 
 ```bash
 # blurring service (several workers using CPU for the blurring)
-uvicorn src.blur.blur_api:app --reload --port 8000 --workers 8
+uvicorn src.blur.blur_api:app --port 8000 --workers 8
 ```
 
 It is then accessible on [localhost:8000](http://127.0.0.1:8000).
