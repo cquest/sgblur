@@ -192,13 +192,17 @@ def detector(picture, cls=''):
     for r in reversed(range(len(result))):
         for b in range(len(result[r].boxes)):
             obj = result[r].boxes[b]
-            if cls !='' and not names[int(obj.cls)] in cls:
+            try:
+                name = result[r].names[int(obj.cls)]
+            except:
+                name = names[int(obj.cls)]
+            if cls !='' and not name in cls:
                 continue
             box = obj.xywh
             box_l = int(offset[r][0] + box[0][0] - box[0][2] * 0.5) >> hblock << hblock
             box_t = int(offset[r][1] + box[0][1] - box[0][3] * 0.5) >> vblock << vblock
             box_w = int(box[0][2]) + (2 << hblock) >> hblock << hblock
-            if names[int(obj.cls)] == 'sign':
+            if name == 'sign':
                 box_h = int(box[0][3] * 1.25 + (2 << vblock)) >> vblock << vblock
             else:
                 box_h = int(box[0][3]) + (2 << vblock) >> vblock << vblock
@@ -222,7 +226,7 @@ def detector(picture, cls=''):
                     if crop[2] * crop[3] < crop_rects[c][2] * crop_rects[c][3]:
                         crop_rects[c] =crop
                         info[c] = {
-                            "class": names[int(obj.cls)],
+                            "class": name,
                             "confidence": round(float(obj.conf),3),
                             "xywh": crop_rects[c],
                             "bbox": bbox
@@ -234,7 +238,7 @@ def detector(picture, cls=''):
                 # collect info about blurred object to return to client
                 crop_rects.append(crop)
                 info.append({
-                    "class": names[int(obj.cls)],
+                    "class": name,
                     "confidence": round(float(obj.conf),3),
                     "xywh": crop_rects[-1],
                     "bbox": bbox
