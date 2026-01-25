@@ -244,15 +244,6 @@ def blurPicture(picture, keep, debug, config: Config = Config()):
                 subprocess.run('jpegtran %s -trim -drop +%s+%s %s %s > %s' % (JPEGTRAN_OPTS, crop_rects[c][0], crop_rects[c][1], tmpcrop, tmp, tmp+'_tmp'), shell=True)
             os.replace(tmp+'_tmp', tmp)
 
-        # save detected objects data in JPEG comment at end of file
-        with open(tmp, 'r+b') as jpg:
-            jpg.seek(0, os.SEEK_END)
-            jpg.seek(-2, os.SEEK_CUR)
-            jpg.write(b'\xFF\xFE')
-            jpg.write(len(str(info)+'  ').to_bytes(2, 'big'))
-            jpg.write(str(info).encode())
-            jpg.write(b'\xFF\xD9')
-
         # keep potential false positive and road signs original parts hashed
         if config.crop_save_dir != '':
             salt = str(uuid.uuid4())
@@ -293,6 +284,15 @@ def blurPicture(picture, keep, debug, config: Config = Config()):
                         daytime = int(time.time()) - int(time.time()) % 86400
                         os.utime(dirname+cropname, (daytime, daytime))
             results['salt'] = salt 
+
+        # save detected objects data in JPEG comment at end of file
+        with open(tmp, 'r+b') as jpg:
+            jpg.seek(0, os.SEEK_END)
+            jpg.seek(-2, os.SEEK_CUR)
+            jpg.write(b'\xFF\xFE')
+            jpg.write(len(str(info)+'  ').to_bytes(2, 'big'))
+            jpg.write(str(info).encode())
+            jpg.write(b'\xFF\xD9')
 
         if False:
             # regenerate EXIF thumbnail
