@@ -19,12 +19,12 @@ def detection_to_tags(detection, config: Config):
     model_full_name = f'{config.api_name}-{detection["model"]["name"]}/{detection["model"]["version"]}'
     for info in detection["info"]:
         sem = []
-        if info["class"] == "sign":
+        if info["class"] == "sign" and info["confidence"] >= 0.7:
             if 'sign' in info and info['sign']['cls']:
                 sem.append(t("osm|traffic_sign", info['sign']['cls']))
                 sem.append(t("classification_model[osm|traffic_sign=%s]" % info['sign']['cls'],
                             info['sign']['model']['name']+'/'+info['sign']['model']['version']))
-                sem.append(t("classification_confidence[osm|traffic_sign=%s]" %info['sign']['cls'], info['sign']['conf']))
+                sem.append(t("classification_confidence[osm|traffic_sign=%s]" % info['sign']['cls'], str(info['sign']['conf'])))
             else:
                 sem.append(t("osm|traffic_sign", "yes"))
                 sem.append(t("detection_model[osm|traffic_sign=yes]", model_full_name))
